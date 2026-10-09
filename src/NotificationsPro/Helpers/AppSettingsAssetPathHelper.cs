@@ -100,6 +100,37 @@ public static class AppSettingsAssetPathHelper
         }
 
         settings.AppSoundRules = rules;
+        settings.SoundDisplayNames = NormalizeSoundDisplayNames(settings.SoundDisplayNames, settings.SoundLibraryFolders);
+    }
+
+    internal const int MaxSoundDisplayNameLength = 200;
+    internal const int MaxSoundDisplayNames = 1024;
+
+    // Display names use the same key form as rule files, so a profile (folders cleared) carries
+    // only managed/Windows keys. Values are trimmed, control characters removed, length bounded.
+    private static Dictionary<string, string> NormalizeSoundDisplayNames(Dictionary<string, string>? names, IReadOnlyList<string> libraryFolders)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (names == null)
+            return result;
+
+        foreach (var (key, value) in names)
+        {
+            if (result.Count >= MaxSoundDisplayNames)
+                break;
+
+            var reference = ToPortableRuleSoundReferenceOrEmpty(key, libraryFolders);
+            var name = new string((value ?? string.Empty).Where(ch => !char.IsControl(ch)).ToArray()).Trim();
+            if (string.IsNullOrWhiteSpace(reference) || string.IsNullOrWhiteSpace(name))
+                continue;
+
+            if (name.Length > MaxSoundDisplayNameLength)
+                name = name[..MaxSoundDisplayNameLength];
+
+            result[reference] = name;
+        }
+
+        return result;
     }
 
     private static SoundRule NormalizeSoundRule(SoundRule? rule, IReadOnlyList<string> libraryFolders)

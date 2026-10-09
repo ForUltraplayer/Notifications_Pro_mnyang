@@ -275,6 +275,13 @@ public class AppSettings
     public Dictionary<string, ManualMuteConfirmation> ManualMuteConfirmations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Optional display names for sound files, keyed by the stored rule reference ("sounds/x.wav" or an
+    /// allowed absolute path). Written by "Import" when the internal file name differs from the original
+    /// name. Portable (travels with profiles); entries whose key is not an allowed reference are dropped.
+    /// </summary>
+    public Dictionary<string, string> SoundDisplayNames { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// Copies the fork's schema-v6 values (and the schema version itself) into <paramref name="target"/>.
     /// Used where a fresh AppSettings is rebuilt from upstream UI fields so fork values are not reset.
     /// </summary>
@@ -291,6 +298,22 @@ public class AppSettings
         target.StartMinimizedToTray = StartMinimizedToTray;
         target.RestartOnCrash = RestartOnCrash;
         target.ManualMuteConfirmations = CloneManualMuteConfirmations(ManualMuteConfirmations);
+        target.SoundDisplayNames = CloneSoundDisplayNames(SoundDisplayNames);
+    }
+
+    internal static Dictionary<string, string> CloneSoundDisplayNames(Dictionary<string, string>? source)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        if (source == null)
+            return result;
+
+        foreach (var (key, name) in source)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(name))
+                result[key] = name;
+        }
+
+        return result;
     }
 
     internal static Dictionary<string, SoundRule> CloneSoundRules(Dictionary<string, SoundRule>? source)

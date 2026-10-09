@@ -30,6 +30,7 @@ public partial class App : Application
     private SpokenNotificationService? _spokenNotificationService;
     private AudioDispatchSubscription? _audioDispatchSubscription;
     private PlaybackCoordinator? _playbackCoordinator;
+    private SoundLibraryService? _soundLibrary;
 
     private WinForms.ToolStripMenuItem? _showHideItem;
     private WinForms.ToolStripMenuItem? _pauseResumeItem;
@@ -159,6 +160,7 @@ public partial class App : Application
         var soundEngine = new WinRtSoundEngine();
         var settingsManagerForSounds = _settingsManager;
         var soundLibrary = new SoundLibraryService(() => settingsManagerForSounds.Settings, soundEngine);
+        _soundLibrary = soundLibrary;
         _playbackCoordinator = new PlaybackCoordinator(
             _settingsManager,
             soundEngine,
@@ -178,6 +180,7 @@ public partial class App : Application
         _settingsViewModel.ConfigureRefreshSettingsWindow(RefreshSettingsWindowAfterBulkApply);
         _settingsViewModel.ConfigureSettingsWindowBulkApplyState(SetSettingsWindowBulkApplyState);
         _settingsViewModel.ConfigurePlaybackDiagnostics(() => _playbackCoordinator?.GetDiagnostics().ToSummary());
+        _settingsViewModel.ConfigureSoundPlayback(_soundLibrary, _playbackCoordinator);
         UpdateSettingsDiagnostics();
 
         // Play notification sounds. AudioDispatchMode picks exactly one trigger:
@@ -428,6 +431,12 @@ public partial class App : Application
         contextMenu.Items.Add(_clickThroughItem);
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
 
+        // KR-Mnyang fork (P2-B): shared playback turn controls (existing items keep their order).
+        contextMenu.Items.Add("Stop Playback", null, (_, _) => _playbackCoordinator?.StopAll());
+        contextMenu.Items.Add("Preview Default Sound", null, (_, _) =>
+            _playbackCoordinator?.PreviewRule(_settingsManager?.Settings.DefaultSoundRule));
+        contextMenu.Items.Add(new WinForms.ToolStripSeparator());
+
         // Focus mode submenu
         _focusModeItem = new WinForms.ToolStripMenuItem("Focus Mode");
         _focusModeItem.DropDownItems.Add("Focus for 15 min", null, (_, _) => StartFocusMode(15));
@@ -615,6 +624,7 @@ public partial class App : Application
             _notificationListener?.RetryAccessAsync() ?? Task.CompletedTask);
         _settingsViewModel.ConfigureRefreshSettingsWindow(RefreshSettingsWindowAfterBulkApply);
         _settingsViewModel.ConfigureSettingsWindowBulkApplyState(SetSettingsWindowBulkApplyState);
+        _settingsViewModel.ConfigureSoundPlayback(_soundLibrary, _playbackCoordinator);
         UpdateSettingsDiagnostics();
         _settingsWindow = new SettingsWindow(_settingsViewModel, _settingsManager);
         _settingsWindow.Closed += OnSettingsWindowClosed;

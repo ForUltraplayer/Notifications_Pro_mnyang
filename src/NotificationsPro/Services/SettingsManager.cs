@@ -371,6 +371,7 @@ public class SettingsManager
         settings.PlaybackPolicy ??= new PlaybackPolicy();
         settings.PlaybackPolicy.Normalize();
         settings.ManualMuteConfirmations = AppSettings.CloneManualMuteConfirmations(settings.ManualMuteConfirmations);
+        settings.SoundDisplayNames = AppSettings.CloneSoundDisplayNames(settings.SoundDisplayNames);
     }
 
     /// <summary>Only "ko-KR" and "en-US" are stored; anything else means "use the OS default" (null).</summary>

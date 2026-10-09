@@ -281,4 +281,21 @@ public class LegacySettingsImporterTests : IDisposable
         Assert.Equal("""{ "SettingsSchemaVersion": 99 }""", File.ReadAllText(Path.Combine(TargetRoot, "settings.json")));
         Assert.False(Directory.Exists(Path.Combine(TargetRoot, "sounds")));
     }
+
+    [Fact]
+    public void Import_LegacySource_GetsNoPerAppCooldown()
+    {
+        CreatePackagedSource();
+        var target = CreateTarget();
+        Assert.Equal(4, target.Settings.PlaybackPolicy.MinIntervalPerAppSeconds); // new install default
+        var importer = CreateImporter(target);
+
+        var result = importer.Import(importer.DetectCandidates()[0]);
+
+        Assert.True(result.Success, result.Error);
+        Assert.Equal(0, target.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+        var reloaded = new SettingsManager(TargetRoot);
+        reloaded.Load();
+        Assert.Equal(0, reloaded.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+    }
 }

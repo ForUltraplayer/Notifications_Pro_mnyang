@@ -1,6 +1,6 @@
 // @file SettingsSchemaMigrator.cs
 // @author: rudals252
-// @brief 설정 스키마 v5 이하 → v6 이관 규칙(기존 단일 WAV·앱별 WAV를 1파일 Single 규칙으로 변환, 이관 설정의 AudioDispatchMode=OverlayAccepted)을 한 곳에 모은다.
+// @brief 설정 스키마 v5 이하 → v6 이관 규칙(기존 단일 WAV·앱별 WAV를 1파일 Single 규칙으로 변환, 이관 설정의 AudioDispatchMode=OverlayAccepted, 앱별 최소 간격 0)을 한 곳에 모은다.
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
 using NotificationsPro.Models;
@@ -40,6 +40,7 @@ public static class SettingsSchemaMigrator
             return false;
 
         settings.AudioDispatchMode = AudioDispatchMode.OverlayAccepted;
+        DisablePerAppCooldownForLegacy(settings);
         BuildSoundRulesFromLegacy(settings);
         return true;
     }
@@ -56,7 +57,19 @@ public static class SettingsSchemaMigrator
             return;
 
         incoming.AudioDispatchMode = current.AudioDispatchMode;
+        DisablePerAppCooldownForLegacy(incoming);
         BuildSoundRulesFromLegacy(incoming);
+    }
+
+    /// <summary>
+    /// Pre-v6 files never had a per-app minimum interval, so migration must not add a new limit
+    /// (design §7.4, reviewer decision P2-A §11-4): <see cref="PlaybackPolicy.MinIntervalPerAppSeconds"/> = 0.
+    /// The other playback values keep their defaults. New installs and existing v6 files are untouched.
+    /// </summary>
+    internal static void DisablePerAppCooldownForLegacy(AppSettings settings)
+    {
+        settings.PlaybackPolicy ??= new PlaybackPolicy();
+        settings.PlaybackPolicy.MinIntervalPerAppSeconds = 0;
     }
 
     /// <summary>

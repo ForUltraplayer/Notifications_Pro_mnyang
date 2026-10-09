@@ -1263,6 +1263,8 @@ public partial class SettingsViewModel : BaseViewModel
         // KR-Mnyang fork: schema-v6 values have no controls in this view model yet, so carry them
         // (and the schema version) over instead of resetting them to defaults on every save.
         previousSettings.CopyForkExtensionsTo(snapshot);
+        // P2-B: the Sounds tab edits the default rule, playback policy, dispatch mode and display names.
+        ApplySoundUiStateTo(snapshot);
         return snapshot;
     }
 
@@ -1564,6 +1566,7 @@ public partial class SettingsViewModel : BaseViewModel
         _themeManager = themeManager ?? new ThemeManager();
 
         InitializeSettingsAuditPolishCommands();
+        InitializeSoundUi();
 
         if (_queueManager != null)
         {
@@ -1917,6 +1920,7 @@ public partial class SettingsViewModel : BaseViewModel
         }
 
         OnPropertyChanged(nameof(IsStackedLayout));
+        LoadSoundUiFromSettings(s); // KR-Mnyang fork (P2-B): default rule, policy, display names
     }
 
     private void QueueSave()
@@ -2483,9 +2487,11 @@ public partial class SettingsViewModel : BaseViewModel
             .Concat(s.PerAppIcons.Keys)
             .Concat(s.PerAppBackgroundImages.Keys)
             .Concat(s.SpokenMutedApps)
+            .Concat(GetAppNamesFromSoundRules(s))
             .Where(app => !string.IsNullOrWhiteSpace(app))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .OrderBy(app => app, StringComparer.OrdinalIgnoreCase);
+            .OrderBy(app => app, StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         foreach (var app in appNames)
         {
@@ -2501,7 +2507,10 @@ public partial class SettingsViewModel : BaseViewModel
                 icon ?? "Default",
                 backgroundImagePath ?? string.Empty,
                 !IsSpokenAppMuted(app),
-                OnPerAppConfigChanged));
+                OnPerAppConfigChanged)
+            {
+                SoundRule = CreateAppSoundRule(app),
+            });
         }
 
         RefreshPerAppConfigFilters();
@@ -3155,7 +3164,13 @@ public class PerAppConfigEntry : BaseViewModel
         !string.Equals(Sound, DefaultOption, StringComparison.OrdinalIgnoreCase)
         || !string.Equals(Icon, DefaultOption, StringComparison.OrdinalIgnoreCase)
         || !string.IsNullOrWhiteSpace(BackgroundImagePath)
-        || !IsReadAloudEnabled;
+        || !IsReadAloudEnabled
+        || SoundRule?.HasRule == true;
+
+    /// <summary>KR-Mnyang fork (P2-B): WAV rule editor for this app (replaces the legacy sound drop-down).</summary>
+    public AppSoundRuleViewModel? SoundRule { get; init; }
+
+    public void RefreshHasOverrides() => OnPropertyChanged(nameof(HasOverrides));
 
     public void ApplyDefaults()
     {

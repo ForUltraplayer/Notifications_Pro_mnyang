@@ -134,6 +134,12 @@ public partial class SettingsViewModel
         updated.PerAppIcons.Remove(entry.AppName);
         updated.PerAppBackgroundImages.Remove(entry.AppName);
         updated.SpokenMutedApps.RemoveAll(existing => string.Equals(existing, entry.AppName, StringComparison.OrdinalIgnoreCase));
+        // KR-Mnyang fork (P2-B): also return the app to the default sound rule (name key and observed AUMIDs).
+        updated.AppSoundRules.Remove(entry.AppName);
+        foreach (var appId in _queueManager?.AppIdentities.GetAppIds(entry.AppName) ?? Array.Empty<string>())
+            updated.AppSoundRules.Remove(appId);
+        if (entry.SoundRule != null)
+            updated.AppSoundRules.Remove(entry.SoundRule.RuleKey);
         _settingsManager.Apply(updated);
 
         entry.ApplyDefaults();

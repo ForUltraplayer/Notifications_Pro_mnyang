@@ -526,4 +526,52 @@ public class PlaybackCoordinatorTests
         Assert.DoesNotContain("sounds", summary, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("max concurrent 1", summary);
     }
+
+    // ---- P2-B additions: PreviewRule, LastEvent, last started file ----
+
+    [Fact]
+    public void PreviewRule_PlaysFirstUsableFileInListOrder_WithoutHistory()
+    {
+        var h = new Harness();
+        h.Files.Unusable.Add("sounds/1.wav");
+
+        Assert.Equal(PlaybackRequestOutcome.Started, h.Coordinator.PreviewRule(h.Settings.Settings.DefaultSoundRule));
+        h.Posts.RunAll();
+        Assert.Equal(new[] { "sounds/2.wav" }, h.PlayedFiles);
+        Assert.Equal(0, h.Selector.HistoryCount);
+        Assert.Equal("PreviewStarted", h.Diag.LastEvent);
+        Assert.Null(h.Coordinator.GetLastStartedSoundPath()); // previews are not notification sounds
+
+        h.Files.Unusable.UnionWith(new[] { "sounds/2.wav", "sounds/3.wav" });
+        h.CompleteCurrent();
+        Assert.Equal(PlaybackRequestOutcome.SkippedNoUsableFile, h.Coordinator.PreviewRule(h.Settings.Settings.DefaultSoundRule));
+        Assert.Equal(PlaybackRequestOutcome.SkippedNoUsableFile, h.Coordinator.PreviewRule(null));
+        Assert.Equal("SkippedNoUsableFile", h.Diag.LastEvent);
+    }
+
+    [Fact]
+    public void LastEvent_AndLastStartedFile_FollowTheCoordinator()
+    {
+        var h = new Harness(s => s.PlaybackPolicy.MinIntervalPerAppSeconds = 4);
+        Assert.Equal("None", h.Diag.LastEvent);
+
+        h.Sound("Slack");
+        Assert.Equal("Started", h.Diag.LastEvent);
+        Assert.Equal(@"C:\fake\sounds\1.wav", h.Coordinator.GetLastStartedSoundPath());
+
+        h.Sound("Slack");
+        Assert.Equal("SkippedCooldown", h.Diag.LastEvent);
+
+        h.Sound("Teams");
+        Assert.Equal("Queued", h.Diag.LastEvent);
+
+        h.CompleteCurrent();
+        Assert.Equal("Started", h.Diag.LastEvent);
+        Assert.Equal(@"C:\fake\sounds\1.wav", h.Coordinator.GetLastStartedSoundPath()); // Teams has its own sequence
+
+        h.Coordinator.StopAll();
+        h.Posts.RunAll();
+        Assert.Equal("StoppedAll", h.Diag.LastEvent);
+        Assert.DoesNotContain("1.wav", h.Diag.ToSummary());
+    }
 }

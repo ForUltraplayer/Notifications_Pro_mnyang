@@ -8,7 +8,8 @@ namespace NotificationsPro.Models;
 /// <summary>
 /// Counters since the coordinator was created (RAM only). <see cref="MaxConcurrentPlaybacks"/> counts
 /// engine playbacks plus granted speech turns that were alive at the same time; it must stay ≤ 1.
-/// Contains no app names, file paths or notification text.
+/// <see cref="LastEvent"/> names the most recent coordinator event (e.g. "Started", "Completed",
+/// "SkippedCooldown", "Queued"). Contains no app names, file paths or notification text.
 /// </summary>
 public sealed record PlaybackDiagnostics(
     PlaybackActivity Activity,
@@ -28,7 +29,8 @@ public sealed record PlaybackDiagnostics(
     int PreviewsStarted,
     int SpeechGranted,
     int MaxConcurrentPlaybacks,
-    DateTime? LastStartedUtc)
+    DateTime? LastStartedUtc,
+    string LastEvent = "None")
 {
     public string ToSummary()
     {

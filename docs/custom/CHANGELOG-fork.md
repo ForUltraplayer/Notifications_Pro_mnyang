@@ -6,6 +6,30 @@
 
 upstream `CHANGELOG.md`, `docs/PLAN.md`, `docs/STATUS.md`는 수정하지 않는다. 포크 변경은 이 파일과 `docs/custom/` 단계별 보고서에 기록한다.
 
+## P2-B — WAV 기능 UI: 소리 탭·앱 탭·트레이, P2-A 후속 (2026-10-09, 미커밋)
+
+상세: `docs/custom/P2B-sound-ui.md`
+
+### 추가
+
+- 소리 탭: 기본 규칙 편집기(사용 여부, 명시적 무음, 단일/랜덤/순차, 연속 중복 방지, 체크 순서와 Up/Down으로 정하는 재생 순서), 음성 보관함(관리 폴더 열기·폴더 추가·새로고침·파일 가져오기, 폴더·파일 상태와 길이, 미리 듣기·중지, ‘목록에서 제외’와 확인 대화상자가 있는 ‘실제 파일 삭제’ 분리, 외부 폴더 참조 해제), 재생 정책(트리거 모드, 앱별 최소 간격 0=끔, 대기/생략, 대기 수, 대기 시간), 조정기 진단 줄(`AutomationId=SoundPlaybackStatusLine`)과 ‘Stop all playback’.
+- 앱 탭: ‘기본값 상속 / 이 앱 무음 / 이 앱 전용 목록’ 규칙 UI, 같은 표시 이름에 여러 AUMID가 보이면 규칙 키 선택, 수신 경로·원래 소리 처리 상태(읽기 전용)·기존 이름 규칙(표시만)·요약 표시.
+- 트레이: ‘Stop Playback’, ‘Preview Default Sound’(기존 항목·순서 유지).
+- 설정 `SoundDisplayNames`(파일 참조 → 표시 이름, 프로필로 이전, 외부 경로 키는 제외). 가져오기 이름 충돌 시 기록한다.
+- 조정기 `PreviewRule`, `GetLastStartedSoundPath`, 진단 `LastEvent`. `AppIdentityRegistry` 잠금·`FindDisplayNameForAppId`.
+
+### 변경
+
+- 기존 "Default Sound" 콤보·Test·"Browse Custom Sound..."와 앱별 소리 드롭다운(Default/None/파일)을 규칙 UI로 대체했다. 원본 "None" 결함은 ‘이 앱 무음’(`ExplicitSilence`)으로 정확히 표현된다. 가져오기는 같은 이름 파일을 덮어쓰지 않는다.
+- v5 이하 이관 파일·이관 프로필 스냅샷·원본 가져오기는 `MinIntervalPerAppSeconds = 0`(신규 설치 4초, 기존 v6 파일 불변).
+- 설정창 탭 템플릿에 `PART_SelectedContentHost`를 붙여 선택 탭 내용을 UI Automation·화면 낭독기에 노출했다.
+- ‘Clear Overrides’가 그 앱의 소리 규칙도 지운다.
+
+### 테스트
+
+- 494 → 521 (+27). 빌드 경고 0·오류 0. 규칙 저장 경로 변이 2건을 테스트가 잡았다.
+- 실제 exe(무음 WAV, 무음 토스트, UIA 진단 줄): 순차 A→B→A, 동시 최대 1, 간격 4초에서 1건 재생·2건 건너뜀, ‘Stop all playback’ 후 대기 0을 확인했다. 트레이 클릭·앱 탭 조작·재생 방식 콤보 UIA 조작은 미확인이다.
+
 ## P2-A — WAV 재생 엔진: 규칙 선택기·재생 조정기·파일 검증·보관함 서비스 (2026-10-09, 미커밋)
 
 상세: `docs/custom/P2A-playback-engine.md`

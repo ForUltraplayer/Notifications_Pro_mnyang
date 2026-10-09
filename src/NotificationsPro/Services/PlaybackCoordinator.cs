@@ -65,6 +65,8 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
     private int _speechGranted;
     private int _maxConcurrent;
     private DateTime? _lastStartedUtc;
+    private string _lastEvent = "None";
+    private string? _lastStartedSoundPath;
 
     /// <param name="post">Queues an action to run later on the coordinator's thread (must not run it inline).</param>
     public PlaybackCoordinator(
@@ -103,6 +105,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             if (settings.NotificationsPaused)
             {
                 _skippedSilent++;
+                _lastEvent = "SkippedSilent";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.SkippedPaused;
             }
@@ -111,6 +114,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             if (resolution.IsSilent)
             {
                 _skippedSilent++;
+                _lastEvent = "SkippedSilent";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.SkippedSilent;
             }
@@ -125,6 +129,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 && (now - lastAccepted).TotalSeconds < policy.MinIntervalPerAppSeconds)
             {
                 _skippedCooldown++;
+                _lastEvent = "SkippedCooldown";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.SkippedCooldown;
             }
@@ -135,6 +140,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 if (policy.OverflowBehavior == PlaybackOverflowBehavior.Skip || policy.MaxQueued <= 0)
                 {
                     _skippedBusyOrFull++;
+                    _lastEvent = "SkippedBusyOrFull";
                     NotifyStateChangedLocked();
                     return PlaybackRequestOutcome.SkippedBusy;
                 }
@@ -142,6 +148,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 if (CountQueuedSoundsLocked() >= policy.MaxQueued)
                 {
                     _skippedBusyOrFull++;
+                    _lastEvent = "SkippedBusyOrFull";
                     NotifyStateChangedLocked();
                     return PlaybackRequestOutcome.SkippedQueueFull;
                 }
@@ -159,6 +166,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             {
                 RecordAcceptedLocked(appKey, now);
                 _queue.AddLast(job);
+                _lastEvent = "Queued";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.Queued;
             }
@@ -186,6 +194,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             if (fullPath == null)
             {
                 _skippedNoFile++;
+                _lastEvent = "SkippedNoUsableFile";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.SkippedNoUsableFile;
             }
@@ -196,13 +205,16 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 var started = StartEngineJobLocked(job, fullPath);
                 if (!started)
                     _failed++;
+                    _lastEvent = "Failed";
                 NotifyStateChangedLocked();
                 return started ? PlaybackRequestOutcome.Started : PlaybackRequestOutcome.SkippedNoUsableFile;
             }
 
             if (_pendingPreview != null)
                 _cancelled++;
+                _lastEvent = "Cancelled";
             _pendingPreview = job;
+            _lastEvent = "PreviewQueued";
             NotifyStateChangedLocked();
             return PlaybackRequestOutcome.Queued;
         }
@@ -220,6 +232,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             {
                 _pendingPreview = null;
                 _cancelled++;
+                _lastEvent = "Cancelled";
             }
 
             if (_active is PreviewJob)
@@ -246,9 +259,11 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             {
                 _pendingPreview = null;
                 _cancelled++;
+                _lastEvent = "Cancelled";
             }
 
             StopActiveLocked();
+            _lastEvent = "StoppedAll";
             NotifyStateChangedLocked();
         }
     }
@@ -319,7 +334,49 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 _previewsStarted,
                 _speechGranted,
                 _maxConcurrent,
-                _lastStartedUtc);
+                _lastStartedUtc,
+                _lastEvent);
+        }
+    }
+
+    /// <summary>
+    /// Full path of the file the last notification sound started with (RAM only, for the settings
+    /// window status line, which shows only the file's display name). Null before the first start.
+    /// </summary>
+    public string? GetLastStartedSoundPath()
+    {
+        lock (_sync)
+            return _lastStartedSoundPath;
+    }
+
+    /// <summary>
+    /// Previews the first usable file of <paramref name="rule"/> in list order (settings "Preview" and the
+    /// tray "Preview default sound"). Like <see cref="Preview"/> it never touches rule history.
+    /// </summary>
+    public PlaybackRequestOutcome PreviewRule(SoundRule? rule)
+    {
+        string? file = null;
+        foreach (var candidate in rule?.Files ?? new List<string>())
+        {
+            if (!string.IsNullOrWhiteSpace(candidate) && _files.ResolvePlayablePath(candidate) != null)
+            {
+                file = candidate;
+                break;
+            }
+        }
+
+        if (file != null)
+            return Preview(file);
+
+        lock (_sync)
+        {
+            if (_disposed)
+                return PlaybackRequestOutcome.Disposed;
+
+            _skippedNoFile++;
+            _lastEvent = "SkippedNoUsableFile";
+            NotifyStateChangedLocked();
+            return PlaybackRequestOutcome.SkippedNoUsableFile;
         }
     }
 
@@ -409,6 +466,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                     return;
 
                 _failed++;
+                _lastEvent = "Failed";
                 continue;
             }
 
@@ -425,6 +483,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                     speech.Alive = true;
                     IncrementAliveLocked();
                     _speechGranted++;
+                    _lastEvent = "SpeechStarted";
                     Post(speech.OnGranted);
                     return;
 
@@ -432,6 +491,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                     if (IsExpired(sound, _utcNow(), GetPolicy(_settingsManager.Settings)))
                     {
                         _expired++;
+                        _lastEvent = "Expired";
                         continue;
                     }
 
@@ -451,6 +511,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             if (!selection.HasFile)
             {
                 _skippedNoFile++;
+                _lastEvent = "SkippedNoUsableFile";
                 return false;
             }
 
@@ -466,6 +527,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 return true;
 
             _failed++;
+            _lastEvent = "Failed";
             job.Excluded.Add(selection.File!);
         }
     }
@@ -502,11 +564,14 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             {
                 _selector.Commit(sound.HistoryKey, sound.Selection);
                 _started++;
+                _lastEvent = "Started";
                 _lastStartedUtc = _utcNow();
+                _lastStartedSoundPath = job.FullPath;
             }
             else if (job is PreviewJob)
             {
                 _previewsStarted++;
+                _lastEvent = "PreviewStarted";
             }
 
             NotifyStateChangedLocked();
@@ -521,6 +586,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 return;
 
             _completed++;
+            _lastEvent = "Completed";
             FinishActiveLocked();
             TryStartNextLocked();
             NotifyStateChangedLocked();
@@ -535,6 +601,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 return;
 
             _failed++;
+            _lastEvent = "Failed";
             var started = hadStarted || job.Started;
             FinishActiveLocked();
 
@@ -588,6 +655,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 var handle = engineJob.Handle;
                 FinishActiveLocked();
                 _cancelled++;
+                _lastEvent = "Cancelled";
                 try { handle?.Stop(); } catch { }
                 break;
 
@@ -595,6 +663,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 speech.Lease.MarkReleasedWithoutCallback();
                 FinishActiveLocked();
                 _cancelled++;
+                _lastEvent = "Cancelled";
                 Post(speech.OnRevoked);
                 break;
         }
@@ -635,12 +704,14 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                 case SoundJob:
                     _queue.Remove(node);
                     _cancelled++;
+                    _lastEvent = "Cancelled";
                     break;
 
                 case SpeechJob speech when includeSpeech:
                     _queue.Remove(node);
                     speech.Lease.MarkReleasedWithoutCallback();
                     _cancelled++;
+                    _lastEvent = "Cancelled";
                     Post(speech.OnRevoked);
                     break;
             }
@@ -658,6 +729,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             {
                 _queue.Remove(node);
                 _expired++;
+                _lastEvent = "Expired";
             }
 
             node = next;

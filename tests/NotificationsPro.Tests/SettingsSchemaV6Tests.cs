@@ -383,4 +383,72 @@ public class SettingsSchemaV6Tests : IDisposable
         Assert.Equal(new[] { library }, manager.Settings.SoundLibraryFolders);
         Assert.Equal(new[] { "sounds/m.wav", libraryWav }, manager.Settings.DefaultSoundRule.Files);
     }
+
+    // ---- P2-B follow-up (reviewer decision 4): migrated files get MinIntervalPerAppSeconds = 0 ----
+
+    [Fact]
+    public void V5File_MigratedPolicy_HasNoPerAppCooldown_OtherPolicyValuesStayDefault()
+    {
+        var manager = LoadFrom("""
+            { "SettingsSchemaVersion": 5, "SoundEnabled": true, "DefaultSound": "sounds/ding.wav" }
+            """);
+
+        var policy = manager.Settings.PlaybackPolicy;
+        Assert.Equal(0, policy.MinIntervalPerAppSeconds);
+        Assert.Equal(5, policy.MaxQueued);
+        Assert.Equal(30, policy.MaxQueueWaitSeconds);
+        Assert.Equal(PlaybackOverflowBehavior.Queue, policy.OverflowBehavior);
+        Assert.Contains("\"MinIntervalPerAppSeconds\": 0", File.ReadAllText(SettingsPath));
+
+        // The saved v6 file is not migrated a second time on the next start.
+        var reloaded = new SettingsManager(_dir);
+        reloaded.Load();
+        Assert.Equal(0, reloaded.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+    }
+
+    [Fact]
+    public void FileWithoutSchemaVersion_AndCorruptFile_AreLegacy_SoCooldownIsZero()
+    {
+        Assert.Equal(0, LoadFrom("""{ "FontSize": 18 }""").Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+        Assert.Equal(0, LoadFrom("{ not json").Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+    }
+
+    [Fact]
+    public void NewInstall_KeepsFourSecondCooldown()
+    {
+        var manager = new SettingsManager(_dir);
+        manager.Load();
+        Assert.Equal(4, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+    }
+
+    [Theory]
+    [InlineData(4)]
+    [InlineData(7)]
+    public void V6File_PlaybackPolicyIsNotTouched(double minInterval)
+    {
+        var manager = LoadFrom($$"""
+            { "SettingsSchemaVersion": 6, "PlaybackPolicy": { "MinIntervalPerAppSeconds": {{minInterval}}, "MaxQueued": 3 } }
+            """);
+
+        Assert.Equal(minInterval, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+        Assert.Equal(3, manager.Settings.PlaybackPolicy.MaxQueued);
+    }
+
+    [Fact]
+    public void LegacySnapshot_Applied_HasNoPerAppCooldown_ButV6SnapshotKeepsItsPolicy()
+    {
+        var manager = new SettingsManager(_dir);
+        manager.Load();
+        Assert.Equal(4, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+
+        var legacyProfile = new AppSettings { SettingsSchemaVersion = 5, FontSize = 21 };
+        manager.ApplySnapshot(legacyProfile);
+        Assert.Equal(0, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+        Assert.Equal(21, manager.Settings.FontSize);
+
+        var v6Profile = manager.Settings.Clone();
+        v6Profile.PlaybackPolicy.MinIntervalPerAppSeconds = 9;
+        manager.ApplySnapshot(v6Profile);
+        Assert.Equal(9, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
+    }
 }

@@ -214,5 +214,6 @@
   },
   "StartMinimizedToTray": false,
   "RestartOnCrash": false,
-  "ManualMuteConfirmations": {}
+  "ManualMuteConfirmations": {},
+  "SoundDisplayNames": {}
 }
