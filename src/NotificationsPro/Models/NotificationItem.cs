@@ -12,6 +12,10 @@ namespace NotificationsPro.Models;
 public class NotificationItem : INotifyPropertyChanged
 {
     public string AppName { get; }
+
+    /// <summary>WinRT AppUserModelId when known (app identity, not content); null for accessibility capture. RAM only.</summary>
+    public string? AppId { get; init; }
+
     public string Title { get; }
     public string Body { get; }
     public DateTime ReceivedAt { get; }

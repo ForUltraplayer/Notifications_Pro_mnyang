@@ -51,9 +51,12 @@ public class ProfileManager
         var snapshot = settings.Clone();
         if (!snapshot.SettingsSchemaVersion.HasValue || snapshot.SettingsSchemaVersion.Value < SettingsManager.CurrentSettingsSchemaVersion)
             snapshot.SettingsSchemaVersion = SettingsManager.CurrentSettingsSchemaVersion;
+        // App-local values (language, external sound folders, manual mute confirmations, restart intent)
+        // never travel with profiles. Clearing folders first also drops external sound rule paths.
+        LocalOnlySettingsHelper.ClearLocalOnly(snapshot);
         snapshot = AppSettingsAssetPathHelper.CreatePortableSnapshot(snapshot);
-        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-        File.WriteAllText(path, json);
+        var json = LocalOnlySettingsHelper.SerializePortable(snapshot, JsonOptions);
+        AtomicFileWriter.WriteAllText(path, json);
     }
 
     public AppSettings? LoadProfile(string name)

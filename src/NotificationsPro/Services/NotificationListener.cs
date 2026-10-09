@@ -500,7 +500,9 @@ public class NotificationListener
                 try { _listener.RemoveNotification(notification.Id); } catch { }
             }
 
-            _queueManager.AddNotification(appName, fields.Title, fields.Body);
+            // Pass the AUMID (when readable) so per-app rules can match exactly; the display name
+            // ("Unknown" when absent) keeps driving the existing name-based rules.
+            _queueManager.AddNotification(appName, fields.Title, fields.Body, TryReadAppUserModelId(notification));
         }
         catch { }
     }

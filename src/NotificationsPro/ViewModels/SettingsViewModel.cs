@@ -1060,7 +1060,7 @@ public partial class SettingsViewModel : BaseViewModel
 
         var settingsThemeSnapshot = BuildResolvedSettingsThemeSnapshot();
 
-        return new AppSettings
+        var snapshot = new AppSettings
         {
             FontFamily = FontFamily,
             FontSize = FontSize,
@@ -1259,6 +1259,11 @@ public partial class SettingsViewModel : BaseViewModel
             SettingsWindowLeft = previousSettings.SettingsWindowLeft,
             SettingsWindowTop = previousSettings.SettingsWindowTop,
         };
+
+        // KR-Mnyang fork: schema-v6 values have no controls in this view model yet, so carry them
+        // (and the schema version) over instead of resetting them to defaults on every save.
+        previousSettings.CopyForkExtensionsTo(snapshot);
+        return snapshot;
     }
 
     private static string NormalizeTimestampDisplayMode(string? mode)
@@ -1926,7 +1931,8 @@ public partial class SettingsViewModel : BaseViewModel
         _redoStack.Push(_settingsManager.Settings.Clone());
         var previous = _undoStack.Pop();
         _isUndoRedoOperation = true;
-        _settingsManager.Apply(previous);
+        // ApplySnapshot keeps app-local values (e.g. UiLanguage) out of undo/redo.
+        _settingsManager.ApplySnapshot(previous);
         LoadFromSettings();
         NotifyAllPropertiesChanged();
         _isUndoRedoOperation = false;
@@ -1939,7 +1945,7 @@ public partial class SettingsViewModel : BaseViewModel
         _undoStack.Push(_settingsManager.Settings.Clone());
         var next = _redoStack.Pop();
         _isUndoRedoOperation = true;
-        _settingsManager.Apply(next);
+        _settingsManager.ApplySnapshot(next);
         LoadFromSettings();
         NotifyAllPropertiesChanged();
         _isUndoRedoOperation = false;
@@ -2025,7 +2031,7 @@ public partial class SettingsViewModel : BaseViewModel
         try
         {
             profile.SettingsThemeMode = Services.SettingsThemeService.ResolveThemeModeForLoadedSettings(profile);
-            _settingsManager.Apply(profile);
+            _settingsManager.ApplySnapshot(profile);
             ReloadFromCurrentSettings();
             SyncResolvedSettingsThemeState();
         }
@@ -2708,7 +2714,7 @@ public partial class SettingsViewModel : BaseViewModel
         _setSettingsWindowBulkApplyStateAction?.Invoke(true);
         try
         {
-            _settingsManager.Apply(imported);
+            _settingsManager.ApplySnapshot(imported);
             ReloadFromCurrentSettings();
             SyncResolvedSettingsThemeState();
         }

@@ -260,6 +260,69 @@ public class AppSettings
     public double? SettingsWindowLeft { get; set; }
     public double? SettingsWindowTop { get; set; }
 
+    // KR-Mnyang fork — settings schema v6 (P1-B). Playback/UI for these values arrives in P2–P4.
+    // App-local values (UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash)
+    // are excluded from profiles/exports and preserved on profile/import/undo apply
+    // (see LocalOnlySettingsHelper).
+    public string? UiLanguage { get; set; } // "ko-KR", "en-US", or null = OS default
+    public AudioDispatchMode AudioDispatchMode { get; set; } = AudioDispatchMode.PolicyAccepted;
+    public SoundRule DefaultSoundRule { get; set; } = new();
+    public Dictionary<string, SoundRule> AppSoundRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public List<string> SoundLibraryFolders { get; set; } = new();
+    public PlaybackPolicy PlaybackPolicy { get; set; } = new();
+    public bool StartMinimizedToTray { get; set; } = false;
+    public bool RestartOnCrash { get; set; } = false;
+    public Dictionary<string, ManualMuteConfirmation> ManualMuteConfirmations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Copies the fork's schema-v6 values (and the schema version itself) into <paramref name="target"/>.
+    /// Used where a fresh AppSettings is rebuilt from upstream UI fields so fork values are not reset.
+    /// </summary>
+    public void CopyForkExtensionsTo(AppSettings target)
+    {
+        ArgumentNullException.ThrowIfNull(target);
+        target.SettingsSchemaVersion = SettingsSchemaVersion;
+        target.UiLanguage = UiLanguage;
+        target.AudioDispatchMode = AudioDispatchMode;
+        target.DefaultSoundRule = (DefaultSoundRule ?? new SoundRule()).Clone();
+        target.AppSoundRules = CloneSoundRules(AppSoundRules);
+        target.SoundLibraryFolders = new List<string>(SoundLibraryFolders ?? new List<string>());
+        target.PlaybackPolicy = (PlaybackPolicy ?? new PlaybackPolicy()).Clone();
+        target.StartMinimizedToTray = StartMinimizedToTray;
+        target.RestartOnCrash = RestartOnCrash;
+        target.ManualMuteConfirmations = CloneManualMuteConfirmations(ManualMuteConfirmations);
+    }
+
+    internal static Dictionary<string, SoundRule> CloneSoundRules(Dictionary<string, SoundRule>? source)
+    {
+        var result = new Dictionary<string, SoundRule>(StringComparer.OrdinalIgnoreCase);
+        if (source == null)
+            return result;
+
+        foreach (var (key, rule) in source)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && rule != null)
+                result[key] = rule.Clone();
+        }
+
+        return result;
+    }
+
+    internal static Dictionary<string, ManualMuteConfirmation> CloneManualMuteConfirmations(Dictionary<string, ManualMuteConfirmation>? source)
+    {
+        var result = new Dictionary<string, ManualMuteConfirmation>(StringComparer.OrdinalIgnoreCase);
+        if (source == null)
+            return result;
+
+        foreach (var (key, confirmation) in source)
+        {
+            if (!string.IsNullOrWhiteSpace(key) && confirmation != null)
+                result[key] = confirmation.Clone();
+        }
+
+        return result;
+    }
+
     public AppSettings Clone()
     {
         var clone = (AppSettings)MemberwiseClone();
@@ -277,6 +340,7 @@ public class AppSettings
         clone.PerAppSounds = new Dictionary<string, string>(PerAppSounds);
         clone.PerAppIcons = new Dictionary<string, string>(PerAppIcons);
         clone.PerAppBackgroundImages = new Dictionary<string, string>(PerAppBackgroundImages);
+        CopyForkExtensionsTo(clone);
         return clone;
     }
 }

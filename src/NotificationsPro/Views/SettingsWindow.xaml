@@ -3323,6 +3323,10 @@
                             <Button Content="Import Settings" Style="{StaticResource SecondaryButton}"
                                     Margin="0,0,8,8" Command="{Binding ImportSettingsCommand}"
                                     ToolTip="Load settings from a previously exported JSON file. Import replaces all settings, including behavior, appearance, position, and filtering."/>
+                            <Button Content="Import from Original App" Style="{StaticResource SecondaryButton}"
+                                    Margin="0,0,8,8" Command="{Binding ImportLegacySettingsCommand}"
+                                    AutomationProperties.Name="Import settings from the original Notifications Pro"
+                                    ToolTip="Copy settings, themes, profiles and assets from the original Notifications Pro (installed or unpackaged). Current settings are backed up first; the original files are not changed."/>
                         </WrapPanel>
 
                     </StackPanel>

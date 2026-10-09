@@ -28,6 +28,7 @@ public partial class App : Application
     private NotificationListener? _notificationListener;
     private HotkeyManager? _hotkeyManager;
     private SpokenNotificationService? _spokenNotificationService;
+    private AudioDispatchSubscription? _audioDispatchSubscription;
 
     private WinForms.ToolStripMenuItem? _showHideItem;
     private WinForms.ToolStripMenuItem? _pauseResumeItem;
@@ -165,9 +166,13 @@ public partial class App : Application
         _settingsViewModel.ConfigureSettingsWindowBulkApplyState(SetSettingsWindowBulkApplyState);
         UpdateSettingsDiagnostics();
 
-        // Play notification sounds
-        _queueManager.NotificationAdded += appName =>
-            Services.SoundService.PlaySound(appName, _settingsManager.Settings);
+        // Play notification sounds. AudioDispatchMode picks exactly one trigger:
+        // OverlayAccepted = NotificationAdded (upstream), PolicyAccepted = NotificationAccepted.
+        // Playback itself is still the upstream single-file SoundService (rule engine: P2).
+        _audioDispatchSubscription = new AudioDispatchSubscription(
+            _queueManager,
+            _settingsManager,
+            (appName, _) => Services.SoundService.PlaySound(appName, _settingsManager.Settings));
 
         // Update tray icon badge when notification count changes
         ((System.Collections.Specialized.INotifyCollectionChanged)_queueManager.VisibleNotifications)
@@ -220,6 +225,16 @@ public partial class App : Application
                     $"{ForkIdentity.ProductDisplayName} is running in the tray. Right-click for settings, quick theme switching, and focus mode.",
                     WinForms.ToolTipIcon.Info);
             }
+        }
+
+        // settings.json from a newer schema is never overwritten (SettingsManager.Save is a no-op).
+        if (_settingsManager.IsReadOnlyDueToNewerSchema && _trayIcon != null)
+        {
+            _trayIcon.ShowBalloonTip(
+                8000,
+                ForkIdentity.ProductDisplayName,
+                $"settings.json was written by a newer version (schema {_settingsManager.LoadedFileSchemaVersion}). Settings are read-only for this session and changes will not be saved.",
+                WinForms.ToolTipIcon.Warning);
         }
 
         // Initialize notification listener — will prompt for permission on first run
@@ -1044,7 +1059,7 @@ public partial class App : Application
             try
             {
                 profile.SettingsThemeMode = SettingsThemeService.ResolveThemeModeForLoadedSettings(profile);
-                _settingsManager.Apply(profile);
+                _settingsManager.ApplySnapshot(profile);
                 _settingsViewModel?.ReloadFromCurrentSettings();
                 _settingsViewModel?.SyncResolvedSettingsThemeState();
             }
@@ -1203,6 +1218,7 @@ public partial class App : Application
         if (_highContrastHandler != null)
             SystemParameters.StaticPropertyChanged -= _highContrastHandler;
         _spokenNotificationService?.Dispose();
+        _audioDispatchSubscription?.Dispose();
         _hotkeyManager?.Dispose();
         _notificationListener?.Stop();
         _settingsManager?.Save();
@@ -1215,6 +1231,7 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _spokenNotificationService?.Dispose();
+        _audioDispatchSubscription?.Dispose();
         _trayIcon?.Dispose();
         _singleInstanceGuard?.Dispose();
         _singleInstanceGuard = null;

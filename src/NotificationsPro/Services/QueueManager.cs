@@ -27,6 +27,15 @@ public class QueueManager : BaseViewModel
     public HashSet<string> SeenAppNames { get; } = new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
+    /// Display name ↔ AUMID pairs observed this session (RAM only). Exposes "one name, several AUMIDs".
+    /// </summary>
+    public AppIdentityRegistry AppIdentities { get; } = new();
+
+    // RAM-only fingerprints of policy-accepted notifications the overlay did not keep (overflow),
+    // so DeduplicationEnabled still applies to NotificationAccepted outside the visible queue.
+    private readonly ContentFingerprintCache _overflowContentFingerprints = new();
+
+    /// <summary>
     /// Session-only notification archive (RAM only, never persisted to disk).
     /// Stores lightweight snapshots of notifications that were displayed this session.
     /// Cleared when the app closes. Opt-in via SessionArchiveEnabled setting.
@@ -62,6 +71,15 @@ public class QueueManager : BaseViewModel
     /// </summary>
     public event Action<NotificationItem>? NotificationDisplayed;
 
+    /// <summary>
+    /// Fires right after a captured notification passes every shared policy check (pause/focus/presentation,
+    /// quiet hours, app mute, mute rules, burst limit, content de-duplication), whether or not the overlay
+    /// queue then accepts it. Raised before NotificationAdded/NotificationDisplayed; those keep their
+    /// original meaning and timing. <see cref="NotificationAcceptedEventArgs.OverlayAccepted"/> tells the two
+    /// cases apart. Carries no title/body. Not raised for local previews.
+    /// </summary>
+    public event Action<NotificationAcceptedEventArgs>? NotificationAccepted;
+
     public QueueManager(SettingsManager settingsManager)
     {
         _settingsManager = settingsManager;
@@ -73,6 +91,10 @@ public class QueueManager : BaseViewModel
         => AddNotification(string.Empty, title, body);
 
     public void AddNotification(string appName, string title, string body)
+        => AddNotification(appName, title, body, appId: null);
+
+    /// <param name="appId">WinRT AppUserModelId when known (never notification content); null otherwise.</param>
+    public void AddNotification(string appName, string title, string body, string? appId)
     {
         if (_settingsManager.Settings.NotificationsPaused)
             return;
@@ -80,10 +102,13 @@ public class QueueManager : BaseViewModel
         appName = appName?.Trim() ?? string.Empty;
         title = title?.Trim() ?? string.Empty;
         body = body?.Trim() ?? string.Empty;
+        appId = string.IsNullOrWhiteSpace(appId) ? null : appId.Trim();
 
         // Skip if both title and body are empty
         if (string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(body))
             return;
+
+        AppIdentities.Observe(appName, appId);
 
         // Check quiet hours
         if (IsInQuietHours())
@@ -121,11 +146,53 @@ public class QueueManager : BaseViewModel
         _recentNotificationTimes.RemoveAll(t => t < burstCutoff);
         _recentNotificationTimes.Add(DateTime.Now);
 
-        var item = new NotificationItem(appName, title, body);
+        var item = new NotificationItem(appName, title, body) { AppId = appId };
         ApplyVisualSettings(item, settings);
         ApplyNarrationRule(item, settings);
         ApplyHighlightState(item, settings);
+
+        RaiseNotificationAccepted(item, settings);
         EnqueueNotification(item, settings, trackSeenApp: true, archiveNotification: true, ensureVisible: false, raiseEvents: true);
+    }
+
+    /// <summary>
+    /// Shared-policy acceptance point (design §6). The visible-queue de-duplication above already ran;
+    /// notifications the overlay will not keep are additionally de-duplicated by RAM fingerprint so the
+    /// policy path honours DeduplicationEnabled outside the overlay. With de-duplication off, nothing is dropped.
+    /// </summary>
+    private void RaiseNotificationAccepted(NotificationItem item, AppSettings settings)
+    {
+        var overlayAccepts = CanOverlayAccept(settings);
+
+        if (settings.DeduplicationEnabled)
+        {
+            var window = TimeSpan.FromSeconds(settings.DeduplicationWindowSeconds);
+            var fingerprint = ContentFingerprintCache.ComputeFingerprint(item.AppName, item.Title, item.Body);
+            if (_overflowContentFingerprints.Contains(fingerprint, window))
+                return;
+
+            if (!overlayAccepts)
+                _overflowContentFingerprints.Record(fingerprint, window);
+        }
+        else
+        {
+            _overflowContentFingerprints.Clear();
+        }
+
+        NotificationAccepted?.Invoke(new NotificationAcceptedEventArgs(item.AppName, item.AppId, overlayAccepts, item.ReceivedAt));
+    }
+
+    /// <summary>
+    /// Whether <see cref="EnqueueNotification"/> will keep a captured notification visible right now
+    /// (mirrors its replace-mode and visible-limit checks; overflow otherwise).
+    /// </summary>
+    private bool CanOverlayAccept(AppSettings settings)
+    {
+        if (settings.ReplaceMode && _visibleNotifications.Count > 0)
+            return true;
+
+        var maxVisible = Math.Clamp(settings.MaxVisibleNotifications, 1, AppSettings.MaxVisibleNotificationsUpperBound);
+        return _visibleNotifications.Count < maxVisible;
     }
 
     public void AddPreviewNotification(string appName, string title, string body, bool isHighlighted = false, string? highlightColor = null)

@@ -66,7 +66,7 @@ public class ThemeManager
         var filename = SanitizeFileName(theme.Name) + ".json";
         var path = Path.Combine(_themesDir, filename);
         var json = JsonSerializer.Serialize(theme, JsonOptions);
-        File.WriteAllText(path, json);
+        AtomicFileWriter.WriteAllText(path, json);
     }
 
     public void DeleteCustomTheme(string themeName)
@@ -85,9 +85,12 @@ public class ThemeManager
         if (!settings.SettingsSchemaVersion.HasValue || settings.SettingsSchemaVersion.Value < SettingsManager.CurrentSettingsSchemaVersion)
             settings.SettingsSchemaVersion = SettingsManager.CurrentSettingsSchemaVersion;
 
-        var snapshot = AppSettingsAssetPathHelper.CreatePortableSnapshot(settings);
-        var json = JsonSerializer.Serialize(snapshot, JsonOptions);
-        File.WriteAllText(filePath, json);
+        // App-local values never travel with exports (see LocalOnlySettingsHelper).
+        var portableSource = settings.Clone();
+        LocalOnlySettingsHelper.ClearLocalOnly(portableSource);
+        var snapshot = AppSettingsAssetPathHelper.CreatePortableSnapshot(portableSource);
+        var json = LocalOnlySettingsHelper.SerializePortable(snapshot, JsonOptions);
+        AtomicFileWriter.WriteAllText(filePath, json);
     }
 
     public static AppSettings? ImportSettings(string filePath)

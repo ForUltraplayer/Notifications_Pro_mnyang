@@ -1,5 +1,5 @@
 {
-  "SettingsSchemaVersion": 5,
+  "SettingsSchemaVersion": 6,
   "FontFamily": "Segoe UI",
   "FontSize": 14,
   "FontWeight": "Normal",
@@ -194,5 +194,25 @@
   "HasShownWelcome": false,
   "ShowQuickTips": true,
   "SettingsWindowLeft": null,
-  "SettingsWindowTop": null
+  "SettingsWindowTop": null,
+  "UiLanguage": null,
+  "AudioDispatchMode": "PolicyAccepted",
+  "DefaultSoundRule": {
+    "Enabled": true,
+    "Mode": "Single",
+    "Files": [],
+    "AvoidRepeat": false,
+    "ExplicitSilence": false
+  },
+  "AppSoundRules": {},
+  "SoundLibraryFolders": [],
+  "PlaybackPolicy": {
+    "MinIntervalPerAppSeconds": 4,
+    "MaxQueued": 5,
+    "MaxQueueWaitSeconds": 30,
+    "OverflowBehavior": "Queue"
+  },
+  "StartMinimizedToTray": false,
+  "RestartOnCrash": false,
+  "ManualMuteConfirmations": {}
 }
