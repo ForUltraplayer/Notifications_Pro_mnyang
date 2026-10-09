@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Helpers;
 
@@ -75,13 +76,13 @@ public static partial class SpokenNotificationTextFormatter
     {
         var elapsed = DateTime.Now - receivedAt;
         if (elapsed.TotalSeconds < 10)
-            return "just now";
+            return LocalizationManager.Get("Time_JustNow");
         if (elapsed.TotalSeconds < 60)
-            return $"{(int)elapsed.TotalSeconds}s ago";
+            return LocalizationManager.Format("Time_SecondsAgo", (int)elapsed.TotalSeconds);
         if (elapsed.TotalMinutes < 60)
-            return $"{(int)elapsed.TotalMinutes}m ago";
+            return LocalizationManager.Format("Time_MinutesAgo", (int)elapsed.TotalMinutes);
 
-        return $"{(int)elapsed.TotalHours}h ago";
+        return LocalizationManager.Format("Time_HoursAgo", (int)elapsed.TotalHours);
     }
 
     private static string NormalizeWhitespace(string? value)

@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Services;
 
@@ -48,29 +49,29 @@ public class HotkeyManager : IDisposable
         if (TryParseHotkey(hotkeyToggle, out var mod1, out var vk1))
         {
             if (!RegisterHotKey(hwnd, HOTKEY_TOGGLE_OVERLAY, mod1 | MOD_NOREPEAT, vk1))
-                errors.Add($"Toggle Overlay: already in use or unavailable ({hotkeyToggle})");
+                errors.Add(LocalizationManager.Format("Hotkey_InUse", LocalizationManager.Get("Hotkey_ToggleOverlay"), hotkeyToggle));
         }
         else
-            errors.Add($"Toggle Overlay: invalid format ({hotkeyToggle})");
+            errors.Add(LocalizationManager.Format("Hotkey_InvalidFormat", LocalizationManager.Get("Hotkey_ToggleOverlay"), hotkeyToggle));
 
         if (TryParseHotkey(hotkeyDismiss, out var mod2, out var vk2))
         {
             if (!RegisterHotKey(hwnd, HOTKEY_DISMISS_ALL, mod2 | MOD_NOREPEAT, vk2))
-                errors.Add($"Dismiss All: already in use or unavailable ({hotkeyDismiss})");
+                errors.Add(LocalizationManager.Format("Hotkey_InUse", LocalizationManager.Get("Hotkey_DismissAll"), hotkeyDismiss));
         }
         else
-            errors.Add($"Dismiss All: invalid format ({hotkeyDismiss})");
+            errors.Add(LocalizationManager.Format("Hotkey_InvalidFormat", LocalizationManager.Get("Hotkey_DismissAll"), hotkeyDismiss));
 
         if (TryParseHotkey(hotkeyDnd, out var mod3, out var vk3))
         {
             if (!RegisterHotKey(hwnd, HOTKEY_TOGGLE_DND, mod3 | MOD_NOREPEAT, vk3))
-                errors.Add($"Toggle DND: already in use or unavailable ({hotkeyDnd})");
+                errors.Add(LocalizationManager.Format("Hotkey_InUse", LocalizationManager.Get("Hotkey_ToggleDnd"), hotkeyDnd));
         }
         else
-            errors.Add($"Toggle DND: invalid format ({hotkeyDnd})");
+            errors.Add(LocalizationManager.Format("Hotkey_InvalidFormat", LocalizationManager.Get("Hotkey_ToggleDnd"), hotkeyDnd));
 
         RegistrationError = errors.Count > 0
-            ? $"Hotkey issue: {string.Join("; ", errors)}"
+            ? LocalizationManager.Format("Hotkey_Issue", string.Join("; ", errors))
             : null;
 
         _registered = true;

@@ -22,9 +22,9 @@ public sealed class AppSoundRuleViewModel : BaseViewModel
 {
     public static IReadOnlyList<OptionItem<AppSoundRuleChoice>> ChoiceOptions { get; } = new[]
     {
-        new OptionItem<AppSoundRuleChoice>(AppSoundRuleChoice.Inherit, "Use the default sound"),
-        new OptionItem<AppSoundRuleChoice>(AppSoundRuleChoice.Silence, "Silent for this app"),
-        new OptionItem<AppSoundRuleChoice>(AppSoundRuleChoice.Custom, "This app's own list"),
+        OptionItem<AppSoundRuleChoice>.Localized(AppSoundRuleChoice.Inherit, "Sounds_UseTheDefaultSound"),
+        OptionItem<AppSoundRuleChoice>.Localized(AppSoundRuleChoice.Silence, "Apps_ChoiceSilent"),
+        OptionItem<AppSoundRuleChoice>.Localized(AppSoundRuleChoice.Custom, "Apps_ChoiceOwnList"),
     };
 
     private readonly Action<AppSoundRuleViewModel, string?> _onChanged;

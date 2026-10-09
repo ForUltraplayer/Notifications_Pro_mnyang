@@ -7,6 +7,7 @@ using System.Windows.Threading;
 using Windows.Media.Core;
 using Windows.Media.Playback;
 using Windows.Media.SpeechSynthesis;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Services;
 
@@ -76,8 +77,8 @@ public sealed class SpokenNotificationService : IDisposable
             var defaultVoice = SpeechSynthesizer.DefaultVoice;
             var defaultDisplayName = BuildWinRtVoiceDisplayLabel(defaultVoice);
             var defaultLabel = string.IsNullOrWhiteSpace(defaultDisplayName)
-                ? "System Default"
-                : $"System Default ({defaultDisplayName})";
+                ? LocalizationManager.Get("Accessibility_SystemDefaultVoice")
+                : LocalizationManager.Format("Accessibility_SystemDefaultVoiceNamed", defaultDisplayName);
 
             voices.Add(new NarrationVoiceOption(string.Empty, defaultLabel, defaultVoice?.Language ?? string.Empty, isSystemDefault: true));
             seenIds.Add(string.Empty);
@@ -94,7 +95,7 @@ public sealed class SpokenNotificationService : IDisposable
         }
         catch
         {
-            voices.Add(new NarrationVoiceOption(string.Empty, "System Default", string.Empty, isSystemDefault: true));
+            voices.Add(new NarrationVoiceOption(string.Empty, LocalizationManager.Get("Accessibility_SystemDefaultVoice"), string.Empty, isSystemDefault: true));
             seenIds.Add(string.Empty);
         }
 
@@ -113,7 +114,7 @@ public sealed class SpokenNotificationService : IDisposable
     {
         var previewText = SpokenNotificationTextFormatter.BuildText(
             "Notifications Pro",
-            "Notifications Pro keeps important alerts readable, audible, and easy to follow on busy, high-resolution desktops.",
+            LocalizationManager.Get("Accessibility_VoicePreviewSample"),
             DateTime.Now,
             settings.ReadNotificationsAloudMode,
             settings.TimestampDisplayMode);

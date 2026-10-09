@@ -6,6 +6,7 @@
 using System.Windows;
 using System.Windows.Input;
 using NotificationsPro.Services;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -21,8 +22,8 @@ public partial class SettingsViewModel
         if (found.Count == 0)
         {
             System.Windows.MessageBox.Show(
-                "No settings from the original Notifications Pro were found on this PC.",
-                "Import from Original App",
+                LocalizationManager.Get("LegacyImport_NotFound"),
+                LocalizationManager.Get("Profiles_ImportFromOriginalApp"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
             return;
@@ -35,8 +36,8 @@ public partial class SettingsViewModel
         if (!chosen.CanImport)
         {
             System.Windows.MessageBox.Show(
-                $"This copy cannot be imported: {chosen.BlockReason}.",
-                "Import from Original App",
+                LocalizationManager.Format("LegacyImport_CannotImport", chosen.BlockReason),
+                LocalizationManager.Get("Profiles_ImportFromOriginalApp"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Warning);
             return;
@@ -62,30 +63,30 @@ public partial class SettingsViewModel
 
         var lines = new List<string>
         {
-            result.Success ? "Import finished. The original app's files were not changed." : $"Import did not complete: {result.Error}",
-            $"Assets copied: {result.AssetsCopied}, already identical: {result.AssetsSkippedIdentical}, replaced (backed up): {result.AssetsBackedUp}",
+            result.Success ? LocalizationManager.Get("LegacyImport_Finished") : LocalizationManager.Format("LegacyImport_Incomplete", result.Error),
+            LocalizationManager.Format("LegacyImport_AssetCounts", result.AssetsCopied, result.AssetsSkippedIdentical, result.AssetsBackedUp),
         };
         if (!string.IsNullOrWhiteSpace(result.SettingsBackupPath))
-            lines.Add($"Previous settings backup: {result.SettingsBackupPath}");
+            lines.Add(LocalizationManager.Format("LegacyImport_SettingsBackup", result.SettingsBackupPath));
         if (!string.IsNullOrWhiteSpace(result.AssetBackupFolder))
-            lines.Add($"Replaced asset backups: {result.AssetBackupFolder}");
+            lines.Add(LocalizationManager.Format("LegacyImport_AssetBackups", result.AssetBackupFolder));
 
         System.Windows.MessageBox.Show(
             string.Join(Environment.NewLine, lines),
-            "Import from Original App",
+            LocalizationManager.Get("Profiles_ImportFromOriginalApp"),
             MessageBoxButton.OK,
             result.Success ? MessageBoxImage.Information : MessageBoxImage.Warning);
     }
 
     private static LegacySettingsCandidate? ChooseLegacyCandidate(IReadOnlyList<LegacySettingsCandidate> found)
     {
-        const string backupNote = "Current settings are backed up first; the original app's files are only read.";
+        var backupNote = LocalizationManager.Get("LegacyImport_BackupNote");
         if (found.Count == 1)
         {
             var only = found[0];
             var answer = System.Windows.MessageBox.Show(
-                $"Import settings, themes, profiles and assets from:{Environment.NewLine}{Environment.NewLine}{DescribeLegacyCandidate(only)}{Environment.NewLine}{Environment.NewLine}{backupNote}",
-                "Import from Original App",
+                LocalizationManager.Format("LegacyImport_ConfirmOne", DescribeLegacyCandidate(only), backupNote).Replace("\n", Environment.NewLine),
+                LocalizationManager.Get("Profiles_ImportFromOriginalApp"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
             return answer == MessageBoxResult.Yes ? only : null;
@@ -94,11 +95,8 @@ public partial class SettingsViewModel
         var first = found[0];
         var second = found[1];
         var choice = System.Windows.MessageBox.Show(
-            $"Two copies of the original settings were found.{Environment.NewLine}{Environment.NewLine}"
-            + $"Yes = {DescribeLegacyCandidate(first)}{Environment.NewLine}{Environment.NewLine}"
-            + $"No = {DescribeLegacyCandidate(second)}{Environment.NewLine}{Environment.NewLine}"
-            + $"Cancel = do not import.{Environment.NewLine}{backupNote}",
-            "Import from Original App",
+            LocalizationManager.Format("LegacyImport_ConfirmTwo", DescribeLegacyCandidate(first), DescribeLegacyCandidate(second), backupNote).Replace("\n", Environment.NewLine),
+            LocalizationManager.Get("Profiles_ImportFromOriginalApp"),
             MessageBoxButton.YesNoCancel,
             MessageBoxImage.Question);
         return choice switch
@@ -111,9 +109,11 @@ public partial class SettingsViewModel
 
     private static string DescribeLegacyCandidate(LegacySettingsCandidate candidate)
     {
-        var kind = candidate.Kind == LegacySettingsSourceKind.PackagedMsix ? "Installed app (MSIX)" : "Unpackaged run";
-        var modified = candidate.LastWriteTimeUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "unknown";
-        var schema = candidate.SchemaVersion?.ToString() ?? "unknown";
-        return $"{kind}: {candidate.RootPath} (schema {schema}, modified {modified})";
+        var kind = candidate.Kind == LegacySettingsSourceKind.PackagedMsix
+            ? LocalizationManager.Get("LegacyImport_KindPackaged")
+            : LocalizationManager.Get("LegacyImport_KindUnpackaged");
+        var modified = candidate.LastWriteTimeUtc?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? LocalizationManager.Get("Common_Unknown");
+        var schema = candidate.SchemaVersion?.ToString() ?? LocalizationManager.Get("Common_Unknown");
+        return LocalizationManager.Format("LegacyImport_CandidateDescription", kind, candidate.RootPath, schema, modified);
     }
 }

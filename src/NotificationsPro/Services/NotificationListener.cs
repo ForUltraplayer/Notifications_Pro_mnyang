@@ -6,6 +6,7 @@ using System.Windows.Threading;
 using NotificationsPro.Helpers;
 using Windows.UI.Notifications;
 using Windows.UI.Notifications.Management;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Services;
 
@@ -89,9 +90,23 @@ public class NotificationListener
             _ => IsAccessGranted ? "WinRT" : "Initializing"
         };
 
+    /// <summary>
+    /// <see cref="ListenerMode"/> in the UI language for the tray tooltip, About box and status lines.
+    /// <see cref="ListenerMode"/> itself stays an invariant identifier (compared by callers).
+    /// </summary>
+    public string ListenerModeDisplay => _usingAccessibility
+        ? LocalizationManager.Get("Listener_ModeAccessibility")
+        : _winRtState switch
+        {
+            WinRtListenerState.Events => LocalizationManager.Get("Listener_ModeWinRtEvents"),
+            WinRtListenerState.PollingOnly => LocalizationManager.Format("Listener_ModeWinRtPolling", PollOnlyInterval.TotalSeconds),
+            WinRtListenerState.AccessRevoked => LocalizationManager.Get("Listener_ModeWinRtAccessRevoked"),
+            _ => IsAccessGranted ? "WinRT" : LocalizationManager.Get("Listener_ModeInitializing")
+        };
+
     /// <summary>NotificationChanged registration result (technical status/HRESULT only).</summary>
     public string SubscriptionState { get; private set; } = "Not attempted";
-    public string StatusMessage { get; private set; } = "Not initialized";
+    public string StatusMessage { get; private set; } = LocalizationManager.Get("Listener_NotInitialized");
     public event Action? StatusChanged;
 
     // --- Win32 imports for accessibility fallback ---
@@ -159,9 +174,9 @@ public class NotificationListener
         if (string.Equals(_configuredCaptureMode, NotificationCaptureModeHelper.ModeAccessibility, StringComparison.OrdinalIgnoreCase))
         {
             IsAccessGranted = false;
-            StatusMessage = "Capture mode is forced to accessibility";
+            StatusMessage = LocalizationManager.Get("Listener_ForcedAccessibility");
             StatusChanged?.Invoke();
-            StartAccessibilityCapture("Listening via forced accessibility mode");
+            StartAccessibilityCapture(LocalizationManager.Get("Listener_ListeningForcedAccessibility"));
             return true;
         }
 
@@ -174,18 +189,18 @@ public class NotificationListener
             if (accessStatus == UserNotificationListenerAccessStatus.Allowed)
             {
                 IsAccessGranted = true;
-                StatusMessage = "Access granted — starting WinRT listener";
+                StatusMessage = LocalizationManager.Get("Listener_AccessGrantedStarting");
                 StatusChanged?.Invoke();
                 await StartWinRTListeningAsync();
                 return true;
             }
 
             // Access denied or pending — fall through to accessibility
-            StatusMessage = $"WinRT access: {accessStatus} — switching to accessibility mode";
+            StatusMessage = LocalizationManager.Format("Listener_AccessStatusSwitching", accessStatus);
         }
         catch (Exception ex)
         {
-            StatusMessage = $"WinRT unavailable ({ex.GetType().Name}) — switching to accessibility mode";
+            StatusMessage = LocalizationManager.Format("Listener_UnavailableSwitching", ex.GetType().Name);
         }
 
         StatusChanged?.Invoke();
@@ -229,7 +244,7 @@ public class NotificationListener
             catch (Exception ex)
             {
                 if (session != _winRtSession) return;
-                SwitchToAccessibility($"WinRT seed failed ({DescribeException(ex)})");
+                SwitchToAccessibility(LocalizationManager.Format("Listener_SeedFailed", DescribeException(ex)));
                 return;
             }
 
@@ -242,8 +257,8 @@ public class NotificationListener
             StartPollTimer(_winRtSubscribed ? EventModeBackupPollInterval : PollOnlyInterval);
 
             StatusMessage = _winRtSubscribed
-                ? $"Seeded {seededCount} — events + {EventModeBackupPollInterval.TotalSeconds:0}s backup poll"
-                : $"Seeded {seededCount} — event subscription failed ({SubscriptionState}), polling every {PollOnlyInterval.TotalSeconds:0}s";
+                ? LocalizationManager.Format("Listener_SeededEvents", seededCount, EventModeBackupPollInterval.TotalSeconds)
+                : LocalizationManager.Format("Listener_SeededPolling", seededCount, SubscriptionState, PollOnlyInterval.TotalSeconds);
             StatusChanged?.Invoke();
         }
         finally
@@ -345,7 +360,7 @@ public class NotificationListener
             {
                 // Skip this tick; the next tick polls again.
                 _pollTimeoutCount++;
-                StatusMessage = $"{ListenerMode} — poll #{_pollCount} timed out after {PollTimeout.TotalSeconds:0}s, skipped ({_pollTimeoutCount} timeouts)";
+                StatusMessage = LocalizationManager.Format("Listener_PollTimedOut", ListenerModeDisplay, _pollCount, PollTimeout.TotalSeconds, _pollTimeoutCount);
                 StatusChanged?.Invoke();
                 return;
             }
@@ -368,14 +383,14 @@ public class NotificationListener
                 }
             }
 
-            var subscriptionSuffix = _winRtSubscribed ? string.Empty : $"; events: {SubscriptionState}";
-            StatusMessage = $"{ListenerMode} — {_capturedCount} captured, {notifications.Count} in system (poll #{_pollCount}){subscriptionSuffix}";
+            var subscriptionSuffix = _winRtSubscribed ? string.Empty : LocalizationManager.Format("Listener_EventsSuffix", SubscriptionState);
+            StatusMessage = LocalizationManager.Format("Listener_PollStatus", ListenerModeDisplay, _capturedCount, notifications.Count, _pollCount, subscriptionSuffix);
             StatusChanged?.Invoke();
         }
         catch (Exception ex)
         {
             if (session == _winRtSession)
-                SwitchToAccessibility($"WinRT poll failed ({DescribeException(ex)})");
+                SwitchToAccessibility(LocalizationManager.Format("Listener_PollFailed", DescribeException(ex)));
         }
         finally
         {
@@ -389,7 +404,7 @@ public class NotificationListener
         _winRtState = WinRtListenerState.AccessRevoked;
         IsAccessGranted = false;
         _pollTracker.Reset();
-        StatusMessage = $"WinRT access {accessStatus} — revoked or denied, polling stopped. Allow it in Windows Settings > Privacy > Notifications";
+        StatusMessage = LocalizationManager.Format("Listener_AccessRevoked", accessStatus);
         StatusChanged?.Invoke();
     }
 
@@ -402,7 +417,7 @@ public class NotificationListener
         _pollTracker.Seed(existing.Select(CreateTrackerKey));
         IsAccessGranted = true;
         _winRtState = _winRtSubscribed ? WinRtListenerState.Events : WinRtListenerState.PollingOnly;
-        StatusMessage = $"WinRT access allowed again — re-seeded {existing.Count}, polling resumed";
+        StatusMessage = LocalizationManager.Format("Listener_AccessRestored", existing.Count);
         StatusChanged?.Invoke();
     }
 
@@ -530,14 +545,14 @@ public class NotificationListener
         {
             StartAccessibilityStatusTimer();
             UpdateAccessibilityStatus(string.IsNullOrWhiteSpace(statusPrefix)
-                ? "Listening via accessibility mode"
+                ? LocalizationManager.Get("Listener_ListeningAccessibility")
                 : statusPrefix);
         }
         else
         {
             StatusMessage = string.IsNullOrWhiteSpace(statusPrefix)
-                ? "Failed to start accessibility listener"
-                : $"{statusPrefix} — failed to start accessibility listener";
+                ? LocalizationManager.Get("Listener_AccessibilityStartFailed")
+                : LocalizationManager.Format("Listener_AccessibilityStartFailedWithPrefix", statusPrefix);
             StatusChanged?.Invoke();
         }
     }
@@ -899,11 +914,11 @@ public class NotificationListener
     {
         var classHint = string.Empty;
         if (_lastAccessibilityClassName != null)
-            classHint = $", last class {_lastAccessibilityClassName}";
+            classHint = LocalizationManager.Format("Listener_LastClassSuffix", _lastAccessibilityClassName);
 
-        var suffix = $"{_capturedCount} captured, {_accessibilityCandidateCount} candidates, {_accessibilityEventCount} events{classHint}";
+        var suffix = LocalizationManager.Format("Listener_AccessibilityCounters", _capturedCount, _accessibilityCandidateCount, _accessibilityEventCount, classHint);
         StatusMessage = string.IsNullOrWhiteSpace(prefix)
-            ? $"Accessibility mode — {suffix}"
+            ? LocalizationManager.Format("Listener_AccessibilityModeStatus", suffix)
             : $"{prefix} — {suffix}";
         StatusChanged?.Invoke();
     }
@@ -998,7 +1013,7 @@ public class NotificationListener
         _isRunning = false;
         _usingAccessibility = false;
         IsAccessGranted = false;
-        StatusMessage = $"{reason} — switching to accessibility mode";
+        StatusMessage = LocalizationManager.Format("Listener_ReasonSwitching", reason);
         StatusChanged?.Invoke();
         StartAccessibilityCapture(reason);
     }
@@ -1038,7 +1053,7 @@ public class NotificationListener
                 _listener = listener;
                 IsAccessGranted = true;
                 _isRunning = false; // Reset so StartWinRTListeningAsync proceeds
-                StatusMessage = "Upgraded to WinRT listener (access granted on retry)";
+                StatusMessage = LocalizationManager.Get("Listener_UpgradedToWinRt");
                 StatusChanged?.Invoke();
                 await StartWinRTListeningAsync();
             }

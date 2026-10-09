@@ -5,6 +5,7 @@
 
 using NotificationsPro.Helpers;
 using NotificationsPro.Models;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -17,7 +18,7 @@ public sealed class SoundFolderItemViewModel
         SourceText = SoundUiText.Source(status.Source);
         StatusText = SoundUiText.FolderStatus(status.Status);
         IsAvailable = status.Status == SoundFileStatus.Usable;
-        CountText = $"{status.WavCount} WAV";
+        CountText = LocalizationManager.Format("Sounds_FolderWavCount", status.WavCount);
     }
 
     public string FolderPath { get; }

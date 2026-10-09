@@ -12,8 +12,10 @@ public static class SettingsTabNavigationHelper
 
         for (var i = 0; i < tabItems.Count; i++)
         {
+            // Tag holds the invariant tab id (English header); headers are localized (P3).
             if (tabItems[i] is TabItem tab
-                && string.Equals(GetHeaderText(tab.Header), tabHeader, StringComparison.OrdinalIgnoreCase))
+                && (string.Equals(tab.Tag as string, tabHeader, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(GetHeaderText(tab.Header), tabHeader, StringComparison.OrdinalIgnoreCase)))
             {
                 return i;
             }

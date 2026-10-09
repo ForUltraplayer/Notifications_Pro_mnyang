@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 using NotificationsPro.Helpers;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Converters;
 
@@ -22,7 +23,7 @@ public class VoiceAccessAutomationNameConverter : IMultiValueConverter
             receivedAt,
             mode,
             timestampDisplayMode,
-            culture);
+            LocalizationManager.Instance.Culture);
     }
 
     public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)

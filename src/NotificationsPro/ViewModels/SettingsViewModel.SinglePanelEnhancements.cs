@@ -4,6 +4,7 @@ using System.Windows.Input;
 using NotificationsPro.Helpers;
 using NotificationsPro.Models;
 using NotificationsPro.Services;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -517,7 +518,7 @@ public partial class SettingsViewModel
 
     private void BrowseCardBackgroundImage()
     {
-        var importedPath = ImportBackgroundImage("Choose a notification card background image");
+        var importedPath = ImportBackgroundImage(LocalizationManager.Get("Appearance_ChooseCardBackgroundTitle"));
         if (!string.IsNullOrWhiteSpace(importedPath))
             CardBackgroundImagePath = importedPath;
     }
@@ -532,7 +533,7 @@ public partial class SettingsViewModel
 
     private void BrowseFullscreenOverlayImage()
     {
-        var importedPath = ImportBackgroundImage("Choose a fullscreen backdrop image");
+        var importedPath = ImportBackgroundImage(LocalizationManager.Get("Layout_ChooseBackdropImageTitle"));
         if (!string.IsNullOrWhiteSpace(importedPath))
             FullscreenOverlayImagePath = importedPath;
     }
@@ -549,7 +550,7 @@ public partial class SettingsViewModel
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "Image files (*.png;*.jpg;*.jpeg;*.bmp;*.webp)|*.png;*.jpg;*.jpeg;*.bmp;*.webp",
+            Filter = LocalizationManager.Get("Dialog_BackgroundImageFilter"),
             Title = dialogTitle
         };
 
@@ -570,10 +571,10 @@ public partial class SettingsViewModel
         {
             System.Windows.MessageBox.Show(
                 SafeErrorDialogHelper.BuildErrorMessage(
-                    "Could not copy the selected background image",
+                    LocalizationManager.Get("Appearance_CopyBackgroundImageFailed"),
                     ex,
-                    "Check that the source image is still available and try again"),
-                "Background Image",
+                    LocalizationManager.Get("Appearance_CopyBackgroundImageFailedNextStep")),
+                LocalizationManager.Get("Appearance_BackgroundImageTitle"),
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Error);
             return null;

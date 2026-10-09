@@ -1,3 +1,5 @@
+using NotificationsPro.Localization;
+
 namespace NotificationsPro.Helpers;
 
 internal static class SafeErrorDialogHelper
@@ -11,7 +13,7 @@ internal static class SafeErrorDialogHelper
 
         var safeLabel = GetSafeExceptionLabel(exception);
         if (!string.IsNullOrWhiteSpace(safeLabel))
-            sections.Add($"Details: {safeLabel}.");
+            sections.Add(LocalizationManager.Format("Error_Details", safeLabel));
 
         if (!string.IsNullOrWhiteSpace(nextStep))
             sections.Add(NormalizeSentence(nextStep));
@@ -32,7 +34,7 @@ internal static class SafeErrorDialogHelper
     {
         var trimmed = value.Trim();
         if (string.IsNullOrWhiteSpace(trimmed))
-            return "Unexpected error.";
+            return LocalizationManager.Get("Error_Unexpected");
 
         return trimmed.EndsWith('.') || trimmed.EndsWith('!') || trimmed.EndsWith('?')
             ? trimmed

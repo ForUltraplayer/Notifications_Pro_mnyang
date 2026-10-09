@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Helpers;
 
@@ -9,7 +10,7 @@ public static partial class VoiceAccessTextFormatter
     public const string ModeBodyOnly = "Body Only";
     public const string ModeTitleBodyTimestamp = "Title + Body + Timestamp";
 
-    private const string GenericNotificationLabel = "Notification";
+    private static string GenericNotificationLabel => LocalizationManager.Get("Overlay_GenericNotificationLabel");
 
     public static string BuildAutomationName(
         string? title,

@@ -4,6 +4,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Converters;
 
@@ -61,7 +62,7 @@ public class ColorToOpacityBrushConverter : IMultiValueConverter
 public class BoolToMuteLabelConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
-        => value is true ? "Unmute" : "Mute";
+        => value is true ? LocalizationManager.Get("Filtering_Unmute") : LocalizationManager.Get("Filtering_Mute");
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotSupportedException();

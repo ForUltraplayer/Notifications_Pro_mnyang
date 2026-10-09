@@ -10,6 +10,7 @@ using NotificationsPro.Helpers;
 using NotificationsPro.Models;
 using NotificationsPro.Services;
 using WinForms = System.Windows.Forms;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -41,22 +42,23 @@ public partial class SettingsViewModel : BaseViewModel
         "Discord"
     };
 
+    // Resource keys (P3): sample text follows the UI language; preview app names are not translated.
     private static readonly string[] PreviewTitles =
     {
-        "Sarah sent a message",
-        "Design review updated",
-        "Q2 planning reminder",
-        "Scan completed",
-        "GameNight starts soon"
+        "Preview_Title1",
+        "Preview_Title2",
+        "Preview_Title3",
+        "Preview_Title4",
+        "Preview_Title5"
     };
 
     private static readonly string[] PreviewBodies =
     {
-        "Sarah: Hey, are you available for a quick call about the project?",
-        "New message in #general — Alex uploaded the final designs for review.",
-        "You have 3 unread messages from the marketing team regarding Q2 planning.",
-        "Your device scan completed successfully. No threats found.",
-        "GameNight server — Jake: Who's joining tonight? Starting at 8pm!"
+        "Preview_Body1",
+        "Preview_Body2",
+        "Preview_Body3",
+        "Preview_Body4",
+        "Preview_Body5"
     };
 
     private int _previewIndex;
@@ -583,7 +585,7 @@ public partial class SettingsViewModel : BaseViewModel
     private string _densityPreset = "Comfortable";
     public string DensityPreset { get => _densityPreset; set { if (SetProperty(ref _densityPreset, value)) QueueSave(); } }
 
-    private string _notificationAccessStatusSummary = "Checking Windows notification access...";
+    private string _notificationAccessStatusSummary = LocalizationManager.Get("System_AccessCheckingSummary");
     public string NotificationAccessStatusSummary
     {
         get => _notificationAccessStatusSummary;
@@ -591,7 +593,7 @@ public partial class SettingsViewModel : BaseViewModel
     }
 
     private string _notificationAccessStatusDetail =
-        "Notifications Pro uses direct WinRT notification access when Windows allows it, and falls back to accessibility capture when needed.";
+        LocalizationManager.Get("System_AccessDefaultDetail");
     public string NotificationAccessStatusDetail
     {
         get => _notificationAccessStatusDetail;
@@ -1692,7 +1694,7 @@ public partial class SettingsViewModel : BaseViewModel
             ? "Unknown"
             : listenerMode.Trim();
         var detail = string.IsNullOrWhiteSpace(statusMessage)
-            ? "No additional status reported yet."
+            ? LocalizationManager.Get("System_AccessNoAdditionalStatus")
             : statusMessage.Trim();
 
         UpdateCaptureDiagnosticSnapshot(normalizedMode, detail);
@@ -1701,33 +1703,33 @@ public partial class SettingsViewModel : BaseViewModel
         {
             if (string.Equals(NotificationCaptureMode, NotificationCaptureModeHelper.ModeAccessibility, StringComparison.OrdinalIgnoreCase))
             {
-                NotificationAccessStatusSummary = "Capture mode: Forced accessibility";
+                NotificationAccessStatusSummary = LocalizationManager.Get("System_AccessForcedAccessibilitySummary");
                 NotificationAccessStatusDetail =
-                    $"Notifications Pro is set to skip direct WinRT capture and read visible notifications through Windows accessibility APIs instead. Use Auto or Prefer WinRT if you want to retry direct notification access later. Current status: {detail}";
+                    LocalizationManager.Format("System_AccessForcedAccessibilityDetail", detail);
                 return;
             }
 
-            NotificationAccessStatusSummary = "Capture mode: Accessibility fallback";
+            NotificationAccessStatusSummary = LocalizationManager.Get("System_AccessFallbackSummary");
             NotificationAccessStatusDetail =
-                $"Windows direct notification access is unavailable right now, so Notifications Pro is reading visible notifications through Windows accessibility APIs. If live notifications stop appearing, switch Settings > System > Notification Access > Capture Mode to Force Accessibility or open Windows Settings > Privacy > Notifications, then use Retry Access Check. Current status: {detail}";
+                LocalizationManager.Format("System_AccessFallbackDetail", detail);
             return;
         }
 
         if (isAccessGranted)
         {
             NotificationAccessStatusSummary = string.Equals(NotificationCaptureMode, NotificationCaptureModeHelper.ModeWinRt, StringComparison.OrdinalIgnoreCase)
-                ? "Capture mode: Prefer WinRT (active)"
-                : "Capture mode: WinRT notification access granted";
+                ? LocalizationManager.Get("System_AccessPreferWinRtActiveSummary")
+                : LocalizationManager.Get("System_AccessGrantedSummary");
             NotificationAccessStatusDetail =
-                $"Notifications Pro can read notifications directly through Windows notification APIs. Current status: {detail}";
+                LocalizationManager.Format("System_AccessGrantedDetail", detail);
             return;
         }
 
         NotificationAccessStatusSummary = string.Equals(NotificationCaptureMode, NotificationCaptureModeHelper.ModeWinRt, StringComparison.OrdinalIgnoreCase)
-            ? "Capture mode: Prefer WinRT"
-            : "Capture mode: Checking Windows notification access";
+            ? LocalizationManager.Get("System_AccessPreferWinRtSummary")
+            : LocalizationManager.Get("System_AccessCheckingModeSummary");
         NotificationAccessStatusDetail =
-            $"Notifications Pro is still checking Windows notification access. If direct access is not available, it can fall back to accessibility capture automatically. Current status: {detail}";
+            LocalizationManager.Format("System_AccessCheckingDetail", detail);
     }
 
     public void UpdateHotkeyRegistrationError(string? registrationError)
@@ -2098,8 +2100,8 @@ public partial class SettingsViewModel : BaseViewModel
         var cycleIndex = _previewIndex % PreviewApps.Length;
         var sequence = _previewIndex + 1;
         var appName = PreviewApps[cycleIndex];
-        var title = $"{PreviewTitles[cycleIndex]} #{sequence}";
-        var body = $"{PreviewBodies[cycleIndex]} [Preview {sequence}]";
+        var title = LocalizationManager.Format("Preview_TitleFormat", LocalizationManager.Get(PreviewTitles[cycleIndex]), sequence);
+        var body = LocalizationManager.Format("Preview_BodyFormat", LocalizationManager.Get(PreviewBodies[cycleIndex]), sequence);
         _previewIndex++;
 
         _queueManager.AddPreviewNotification(appName, title, body);
@@ -2119,7 +2121,7 @@ public partial class SettingsViewModel : BaseViewModel
             ? pendingKeyword
             : configuredEntry?.Keyword;
         if (string.IsNullOrWhiteSpace(keyword))
-            keyword = "urgent";
+            keyword = LocalizationManager.Get("Preview_HighlightKeyword");
 
         var previewScope = configuredEntry?.Scope ?? NotificationMatchScopeHelper.TitleAndBody;
         var previewColor = !string.IsNullOrWhiteSpace(configuredEntry?.Color)
@@ -2141,7 +2143,7 @@ public partial class SettingsViewModel : BaseViewModel
             : HighlightBorderThickness;
         var previewAppName = !string.IsNullOrWhiteSpace(configuredEntry?.AppFilter)
             ? configuredEntry!.AppFilter.Trim()
-            : "Filter Preview";
+            : LocalizationManager.Get("Preview_FilterAppName");
         var (title, body) = BuildHighlightPreviewMessage(keyword, previewScope);
 
         _queueManager.AddPreviewNotification(
@@ -2160,9 +2162,9 @@ public partial class SettingsViewModel : BaseViewModel
     {
         return NotificationMatchScopeHelper.Normalize(scope) switch
         {
-            NotificationMatchScopeHelper.TitleOnly => ($"Preview: {keyword}", "Filtering preview for a title-only highlight rule."),
-            NotificationMatchScopeHelper.BodyOnly => ("Highlight preview", $"This body matches the current highlight preview using {keyword}."),
-            _ => ($"Preview: {keyword}", $"This filtering preview repeats {keyword} in the body so title + body matches are obvious.")
+            NotificationMatchScopeHelper.TitleOnly => (LocalizationManager.Format("Preview_HighlightTitle", keyword), LocalizationManager.Get("Preview_HighlightTitleOnlyBody")),
+            NotificationMatchScopeHelper.BodyOnly => (LocalizationManager.Get("Preview_HighlightBodyOnlyTitle"), LocalizationManager.Format("Preview_HighlightBodyOnlyBody", keyword)),
+            _ => (LocalizationManager.Format("Preview_HighlightTitle", keyword), LocalizationManager.Format("Preview_HighlightTitleBodyBody", keyword))
         };
     }
 
@@ -2323,8 +2325,8 @@ public partial class SettingsViewModel : BaseViewModel
     private void ResetToDefaults()
     {
         var result = System.Windows.MessageBox.Show(
-            "This will reset all settings to their default values. Are you sure?",
-            "Reset to Defaults",
+            LocalizationManager.Get("Shell_ResetToDefaultsConfirm"),
+            LocalizationManager.Get("Shell_ResetToDefaults"),
             MessageBoxButton.YesNo,
             MessageBoxImage.Warning);
 
@@ -2556,7 +2558,7 @@ public partial class SettingsViewModel : BaseViewModel
         if (parameter is not PerAppConfigEntry entry)
             return;
 
-        var importedPath = ImportBackgroundImage($"Choose a background image for {entry.AppName}");
+        var importedPath = ImportBackgroundImage(LocalizationManager.Format("Apps_ChooseBackgroundImageForApp", entry.AppName));
         if (!string.IsNullOrWhiteSpace(importedPath))
             entry.BackgroundImagePath = importedPath;
     }
@@ -2678,7 +2680,7 @@ public partial class SettingsViewModel : BaseViewModel
 
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Filter = "JSON files (*.json)|*.json",
+            Filter = LocalizationManager.Get("Dialog_JsonFilter"),
             DefaultExt = ".json",
             FileName = "NotificationsPro-settings.json"
         };
@@ -2691,7 +2693,7 @@ public partial class SettingsViewModel : BaseViewModel
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "JSON files (*.json)|*.json",
+            Filter = LocalizationManager.Get("Dialog_JsonFilter"),
             DefaultExt = ".json"
         };
 
@@ -2852,10 +2854,10 @@ public partial class SettingsViewModel : BaseViewModel
         {
             System.Windows.MessageBox.Show(
                 SafeErrorDialogHelper.BuildErrorMessage(
-                    "Could not play the narration preview",
+                    LocalizationManager.Get("Accessibility_NarrationPreviewFailed"),
                     ex,
-                    "Try a different voice or output device, then try again"),
-                "Spoken Notifications",
+                    LocalizationManager.Get("Accessibility_NarrationPreviewFailedNextStep")),
+                LocalizationManager.Get("Accessibility_SpokenNotificationsTitle"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2869,8 +2871,8 @@ public partial class SettingsViewModel : BaseViewModel
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "Sound files (*.wav)|*.wav",
-            Title = "Choose a custom notification sound"
+            Filter = LocalizationManager.Get("Dialog_SoundFilter"),
+            Title = LocalizationManager.Get("Sounds_ChooseCustomSoundTitle")
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -2903,8 +2905,8 @@ public partial class SettingsViewModel : BaseViewModel
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "Image files (*.png;*.jpg;*.jpeg;*.ico;*.bmp)|*.png;*.jpg;*.jpeg;*.ico;*.bmp",
-            Title = "Choose a custom notification icon"
+            Filter = LocalizationManager.Get("Dialog_IconImageFilter"),
+            Title = LocalizationManager.Get("Appearance_ChooseCustomIconTitle")
         };
 
         if (dialog.ShowDialog() != true) return;
@@ -2940,8 +2942,8 @@ public partial class SettingsViewModel : BaseViewModel
         var archive = _queueManager.SessionArchive;
         if (archive.Count == 0)
         {
-            System.Windows.MessageBox.Show("No archived notifications yet.\n\nEnable Session Archive to keep captured notifications in memory for the current app session while Notifications Pro is running.",
-                "Session Archive", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.MessageBox.Show(LocalizationManager.Get("Archive_EmptySettings"),
+                LocalizationManager.Get("Archive_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -2950,17 +2952,17 @@ public partial class SettingsViewModel : BaseViewModel
             .Select(a =>
             {
                 var elapsed = DateTime.Now - a.ReceivedAt;
-                var timeStr = elapsed.TotalMinutes < 1 ? "just now"
-                    : elapsed.TotalMinutes < 60 ? $"{(int)elapsed.TotalMinutes}m ago"
-                    : $"{(int)elapsed.TotalHours}h ago";
+                var timeStr = elapsed.TotalMinutes < 1 ? LocalizationManager.Get("Time_JustNow")
+                    : elapsed.TotalMinutes < 60 ? LocalizationManager.Format("Time_MinutesAgo", (int)elapsed.TotalMinutes)
+                    : LocalizationManager.Format("Time_HoursAgo", (int)elapsed.TotalHours);
                 var parts = new[] { a.AppName, a.Title, a.Body }
                     .Where(s => !string.IsNullOrWhiteSpace(s));
                 return $"[{timeStr}] {string.Join(" — ", parts)}";
             });
         var text = string.Join("\n", lines);
         System.Windows.Clipboard.SetText(text);
-        System.Windows.MessageBox.Show($"{archive.Count} archived notification(s) copied to clipboard.\n\nNotifications Pro keeps the archive in RAM only and clears it when the app closes. Copying it here also hands the text to the Windows clipboard, which clipboard history or other clipboard tools may retain.",
-            "Session Archive", MessageBoxButton.OK, MessageBoxImage.Information);
+        System.Windows.MessageBox.Show(LocalizationManager.Format("Archive_CopiedToClipboard", archive.Count),
+            LocalizationManager.Get("Archive_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void OpenNotificationAccessSettings()
@@ -2973,10 +2975,10 @@ public partial class SettingsViewModel : BaseViewModel
         {
             System.Windows.MessageBox.Show(
                 SafeErrorDialogHelper.BuildErrorMessage(
-                    "Could not open Windows notification access settings",
+                    LocalizationManager.Get("System_OpenAccessSettingsFailed"),
                     ex,
-                    "Open Windows Settings manually and search for notification access"),
-                "Notification Access",
+                    LocalizationManager.Get("System_OpenAccessSettingsFailedNextStep")),
+                LocalizationManager.Get("System_NotificationAccessTitle"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -2995,10 +2997,10 @@ public partial class SettingsViewModel : BaseViewModel
         {
             System.Windows.MessageBox.Show(
                 SafeErrorDialogHelper.BuildErrorMessage(
-                    "Could not retry the notification access check",
+                    LocalizationManager.Get("System_RetryAccessFailed"),
                     ex,
-                    "Close and reopen Notifications Pro, then try again"),
-                "Notification Access",
+                    LocalizationManager.Get("System_RetryAccessFailedNextStep")),
+                LocalizationManager.Get("System_NotificationAccessTitle"),
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
@@ -3011,9 +3013,9 @@ public partial class SettingsViewModel : BaseViewModel
         for (var i = 0; i < screens.Length; i++)
         {
             var s = screens[i];
-            var label = $"Monitor {i + 1}: {s.Bounds.Width}x{s.Bounds.Height}";
+            var label = LocalizationManager.Format("Layout_MonitorLabel", i + 1, s.Bounds.Width, s.Bounds.Height);
             if (s.Primary)
-                label += " (Primary)";
+                label += LocalizationManager.Get("Layout_MonitorPrimarySuffix");
             MonitorItems.Add(new MonitorInfo(i, label, s.Primary));
         }
 
@@ -3153,11 +3155,11 @@ public class PerAppConfigEntry : BaseViewModel
     }
 
     public string BackgroundImageDisplay => string.IsNullOrWhiteSpace(BackgroundImagePath)
-        ? "Uses global card background"
+        ? LocalizationManager.Get("Apps_UsesGlobalCardBackground")
         : Path.GetFileName(BackgroundImagePath);
 
     public string BackgroundImageToolTip => string.IsNullOrWhiteSpace(BackgroundImagePath)
-        ? "This app uses the global card background from Appearance."
+        ? LocalizationManager.Get("Apps_UsesGlobalCardBackgroundTip")
         : BackgroundImagePath;
 
     public bool HasOverrides =>

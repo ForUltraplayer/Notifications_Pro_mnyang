@@ -3,6 +3,8 @@
 // @brief 원본 Notifications Pro 설정 가져오기 후보(MSIX 가상화 경로 / 언패키지 경로)의 위치·존재·스키마·수정 시각·자산 폴더 상태를 담는다. 내용(알림)은 없다.
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
+using NotificationsPro.Localization;
+
 namespace NotificationsPro.Services;
 
 public enum LegacySettingsSourceKind
@@ -42,9 +44,9 @@ public sealed class LegacySettingsCandidate
 
     /// <summary>Short technical reason when <see cref="CanImport"/> is false (no notification content).</summary>
     public string? BlockReason =>
-        !Exists ? "settings.json not found"
-        : IsTooLarge ? "settings.json exceeds 1 MB"
-        : !IsValidJson ? "settings.json is not valid JSON"
-        : IsNewerSchema ? $"settings.json uses a newer schema ({SchemaVersion})"
+        !Exists ? LocalizationManager.Get("LegacyImport_BlockNotFound")
+        : IsTooLarge ? LocalizationManager.Get("LegacyImport_BlockTooLarge")
+        : !IsValidJson ? LocalizationManager.Get("LegacyImport_BlockInvalidJson")
+        : IsNewerSchema ? LocalizationManager.Format("LegacyImport_BlockNewerSchema", SchemaVersion)
         : null;
 }

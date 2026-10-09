@@ -19,9 +19,9 @@ public sealed class SoundRuleEditorViewModel : BaseViewModel
 {
     public static IReadOnlyList<OptionItem<SoundSelectionMode>> ModeOptions { get; } = new[]
     {
-        new OptionItem<SoundSelectionMode>(SoundSelectionMode.Single, "Single — always the first file"),
-        new OptionItem<SoundSelectionMode>(SoundSelectionMode.Random, "Random — any usable file"),
-        new OptionItem<SoundSelectionMode>(SoundSelectionMode.Sequential, "Sequential — list order, then wrap"),
+        OptionItem<SoundSelectionMode>.Localized(SoundSelectionMode.Single, "SoundRule_ModeSingleOption"),
+        OptionItem<SoundSelectionMode>.Localized(SoundSelectionMode.Random, "SoundRule_ModeRandomOption"),
+        OptionItem<SoundSelectionMode>.Localized(SoundSelectionMode.Sequential, "SoundRule_ModeSequentialOption"),
     };
 
     private Func<string, SoundRuleFileItem> _describe = reference => new SoundRuleFileItem(reference, reference, true, string.Empty);

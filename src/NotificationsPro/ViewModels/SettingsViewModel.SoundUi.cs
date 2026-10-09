@@ -11,6 +11,7 @@ using System.Windows.Input;
 using NotificationsPro.Helpers;
 using NotificationsPro.Models;
 using NotificationsPro.Services;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -33,14 +34,14 @@ public partial class SettingsViewModel
 {
     public static IReadOnlyList<OptionItem<AudioDispatchMode>> AudioDispatchModeOptions { get; } = new[]
     {
-        new OptionItem<AudioDispatchMode>(AudioDispatchMode.OverlayAccepted, "Overlay accepted — only notifications the overlay shows"),
-        new OptionItem<AudioDispatchMode>(AudioDispatchMode.PolicyAccepted, "Policy accepted — every notification that passes filters"),
+        OptionItem<AudioDispatchMode>.Localized(AudioDispatchMode.OverlayAccepted, "Sounds_DispatchOverlayAcceptedOption"),
+        OptionItem<AudioDispatchMode>.Localized(AudioDispatchMode.PolicyAccepted, "Sounds_DispatchPolicyAcceptedOption"),
     };
 
     public static IReadOnlyList<OptionItem<PlaybackOverflowBehavior>> OverflowBehaviorOptions { get; } = new[]
     {
-        new OptionItem<PlaybackOverflowBehavior>(PlaybackOverflowBehavior.Queue, SoundUiText.Overflow(PlaybackOverflowBehavior.Queue)),
-        new OptionItem<PlaybackOverflowBehavior>(PlaybackOverflowBehavior.Skip, SoundUiText.Overflow(PlaybackOverflowBehavior.Skip)),
+        new OptionItem<PlaybackOverflowBehavior>(PlaybackOverflowBehavior.Queue, () => SoundUiText.Overflow(PlaybackOverflowBehavior.Queue)),
+        new OptionItem<PlaybackOverflowBehavior>(PlaybackOverflowBehavior.Skip, () => SoundUiText.Overflow(PlaybackOverflowBehavior.Skip)),
     };
 
     private SoundLibraryService? _soundLibrary;
@@ -62,7 +63,7 @@ public partial class SettingsViewModel
     private bool _isSoundsTabSelected;
     private bool _isAppsTabSelected;
     private string _soundLibraryMessage = string.Empty;
-    private string _playbackStatusText = "Playback: unavailable";
+    private string _playbackStatusText = LocalizationManager.Get("Sounds_PlaybackUnavailable");
 
     public SoundRuleEditorViewModel DefaultRuleEditor { get; } = new();
 
@@ -139,7 +140,9 @@ public partial class SettingsViewModel
         }
     }
 
-    public string MinIntervalPerAppText => _minIntervalPerAppSeconds <= 0 ? "Off" : $"{_minIntervalPerAppSeconds:0} s";
+    public string MinIntervalPerAppText => _minIntervalPerAppSeconds <= 0
+        ? LocalizationManager.Get("Option_Off")
+        : LocalizationManager.Format("Unit_SecondsValue", _minIntervalPerAppSeconds);
 
     public double MinIntervalSliderMaximum => Math.Max(60, _minIntervalPerAppSeconds);
 
@@ -394,7 +397,7 @@ public partial class SettingsViewModel
         }
         catch (Exception ex)
         {
-            SoundLibraryMessage = $"The sound library could not be read ({ex.GetType().Name}).";
+            SoundLibraryMessage = LocalizationManager.Format("Sounds_LibraryReadFailed", ex.GetType().Name);
             return;
         }
 
@@ -516,7 +519,7 @@ public partial class SettingsViewModel
         }
         catch (Exception ex)
         {
-            SoundLibraryMessage = $"The managed folder could not be opened ({ex.GetType().Name}).";
+            SoundLibraryMessage = LocalizationManager.Format("Sounds_ManagedFolderOpenFailed", ex.GetType().Name);
         }
     }
 
@@ -532,14 +535,14 @@ public partial class SettingsViewModel
         var result = _soundLibrary.ValidateFolderForRegistration(picked);
         if (!result.Accepted || result.NormalizedPath == null)
         {
-            SoundLibraryMessage = $"Folder not added: {SoundUiText.FolderRejection(result.Rejection)}";
+            SoundLibraryMessage = LocalizationManager.Format("Sounds_FolderNotAdded", SoundUiText.FolderRejection(result.Rejection));
             return;
         }
 
         var current = _settingsManager.Settings;
         if (current.SoundLibraryFolders.Contains(result.NormalizedPath, StringComparer.OrdinalIgnoreCase))
         {
-            SoundLibraryMessage = "This folder is already in the library.";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_FolderAlreadyInLibrary");
             RefreshSoundLibrary();
             return;
         }
@@ -547,7 +550,7 @@ public partial class SettingsViewModel
         var updated = current.Clone();
         updated.SoundLibraryFolders.Add(result.NormalizedPath);
         _settingsManager.Apply(updated);
-        SoundLibraryMessage = $"Folder added as a reference (files stay where they are): {result.NormalizedPath}";
+        SoundLibraryMessage = LocalizationManager.Format("Sounds_FolderAddedAsReference", result.NormalizedPath);
         RefreshSoundLibrary();
     }
 
@@ -557,8 +560,8 @@ public partial class SettingsViewModel
             return;
 
         if (!ConfirmSoundAction(
-                "Remove folder reference",
-                $"Stop using this folder?\n\n{folder.FolderPath}\n\nIts files are removed from every sound list. Nothing is deleted from disk."))
+                LocalizationManager.Get("Sounds_RemoveFolderReferenceTitle"),
+                LocalizationManager.Format("Sounds_RemoveFolderReferenceConfirm", folder.FolderPath)))
         {
             return;
         }
@@ -568,7 +571,7 @@ public partial class SettingsViewModel
         updated.SoundLibraryFolders.RemoveAll(path => string.Equals(path, folder.FolderPath, StringComparison.OrdinalIgnoreCase));
         _settingsManager.Apply(updated); // normalization drops rule files that were inside the folder
         LoadSoundUiFromSettings(_settingsManager.Settings);
-        SoundLibraryMessage = "Folder reference removed. No files were deleted.";
+        SoundLibraryMessage = LocalizationManager.Get("Sounds_FolderReferenceRemoved");
         RefreshSoundLibrary();
     }
 
@@ -603,7 +606,7 @@ public partial class SettingsViewModel
         if (namesChanged)
             FlushPendingSave();
 
-        SoundLibraryMessage = "Import — " + string.Join("; ", lines);
+        SoundLibraryMessage = LocalizationManager.Format("Sounds_ImportResult", string.Join("; ", lines));
         RefreshSoundLibrary();
     }
 
@@ -624,26 +627,26 @@ public partial class SettingsViewModel
 
         if (_playbackCoordinator == null)
         {
-            SoundLibraryMessage = "Playback is not available.";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_PlaybackNotAvailable");
             return;
         }
 
         var outcome = _playbackCoordinator.Preview(reference);
         if (outcome == PlaybackRequestOutcome.SkippedNoUsableFile)
-            SoundLibraryMessage = "This file cannot be played (missing, unsupported or not in an allowed folder).";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_FileCannotBePlayed");
     }
 
     private void PreviewDefaultSound()
     {
         if (_playbackCoordinator == null)
         {
-            SoundLibraryMessage = "Playback is not available.";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_PlaybackNotAvailable");
             return;
         }
 
         var outcome = _playbackCoordinator.PreviewRule(BuildDefaultRuleFromEditor());
         if (outcome == PlaybackRequestOutcome.SkippedNoUsableFile)
-            SoundLibraryMessage = "The default list has no usable file to preview.";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_DefaultListNoUsableFile");
     }
 
     /// <summary>"Remove from lists": takes the file out of every rule. The file on disk is not touched.</summary>
@@ -655,7 +658,7 @@ public partial class SettingsViewModel
         FlushPendingSave();
         _settingsManager.Apply(SoundLibraryService.RemoveFromRules(_settingsManager.Settings, reference));
         LoadSoundUiFromSettings(_settingsManager.Settings);
-        SoundLibraryMessage = "Removed from all sound lists. The file was not deleted.";
+        SoundLibraryMessage = LocalizationManager.Get("Sounds_RemovedFromAllLists");
     }
 
     /// <summary>"Delete file": managed files only, after an explicit confirmation.</summary>
@@ -671,10 +674,10 @@ public partial class SettingsViewModel
         }
 
         if (!ConfirmSoundAction(
-                "Delete sound file",
-                $"Delete \"{item.DisplayName}\" ({item.FileName}) from the managed sound folder?\n\nThe file is removed from disk and from every sound list. This cannot be undone."))
+                LocalizationManager.Get("Sounds_DeleteSoundFileTitle"),
+                LocalizationManager.Format("Sounds_DeleteSoundFileConfirm", item.DisplayName, item.FileName)))
         {
-            SoundLibraryMessage = "Delete cancelled. Nothing was changed.";
+            SoundLibraryMessage = LocalizationManager.Get("Sounds_DeleteCancelled");
             return;
         }
 
@@ -699,7 +702,7 @@ public partial class SettingsViewModel
     {
         if (_playbackCoordinator == null)
         {
-            PlaybackStatusText = "Playback: unavailable";
+            PlaybackStatusText = LocalizationManager.Get("Sounds_PlaybackUnavailable");
             return;
         }
 
@@ -712,7 +715,7 @@ public partial class SettingsViewModel
         }
         catch
         {
-            PlaybackStatusText = "Playback: unavailable";
+            PlaybackStatusText = LocalizationManager.Get("Sounds_PlaybackUnavailable");
         }
     }
 
@@ -800,7 +803,7 @@ public partial class SettingsViewModel
                 : rule.Enabled ? AppSoundRuleChoice.Custom : AppSoundRuleChoice.Inherit;
 
         var keyOptions = appIds.Count > 1
-            ? new[] { new OptionItem<string>(appName, $"By name — all app IDs ({appName})") }
+            ? new[] { new OptionItem<string>(appName, () => LocalizationManager.Format("Apps_RuleKeyByName", appName)) }
                 .Concat(appIds.Select(id => new OptionItem<string>(id, id)))
                 .ToList()
             : new List<OptionItem<string>>();
@@ -809,7 +812,7 @@ public partial class SettingsViewModel
         viewModel.WithoutNotifications(() => viewModel.Editor.Load(rule ?? new SoundRule(), SoundLibraryItems, DescribeRuleFile));
 
         viewModel.ReceivePathText = appIds.Count > 0
-            ? appIds.Count > 1 ? $"{SoundUiText.ReceivePathWinRt}, {appIds.Count} app IDs" : SoundUiText.ReceivePathWinRt
+            ? appIds.Count > 1 ? LocalizationManager.Format("Apps_ReceivePathWinRtMany", SoundUiText.ReceivePathWinRt, appIds.Count) : SoundUiText.ReceivePathWinRt
             : _queueManager?.SeenAppNames.Contains(appName) == true
                 ? SoundUiText.ReceivePathAccessibility
                 : SoundUiText.ReceivePathNotSeen;
@@ -825,9 +828,9 @@ public partial class SettingsViewModel
 
         var legacy = new List<string>();
         if (settings.PerAppSounds.TryGetValue(appName, out var legacySound) && !string.IsNullOrWhiteSpace(legacySound))
-            legacy.Add($"Original app's per-app sound (not used for playback): {Path.GetFileNameWithoutExtension(legacySound)}");
+            legacy.Add(LocalizationManager.Format("Apps_LegacyPerAppSound", Path.GetFileNameWithoutExtension(legacySound)));
         if (AppIdentityMatcher.ContainsDisplayName(settings.MutedApps, appName))
-            legacy.Add("Notifications from this app are muted in Filtering.");
+            legacy.Add(LocalizationManager.Get("Apps_AppMutedInFiltering"));
         viewModel.LegacyInfoText = string.Join(Environment.NewLine, legacy);
 
         UpdateAppSummary(viewModel);
@@ -839,28 +842,28 @@ public partial class SettingsViewModel
         switch (viewModel.Choice)
         {
             case AppSoundRuleChoice.Silence:
-                summary = "Silent for this app; never falls back to the default sound.";
+                summary = LocalizationManager.Get("Apps_SummarySilent");
                 break;
 
             case AppSoundRuleChoice.Custom:
                 var count = viewModel.Editor.Files.Count;
                 summary = count == 0
-                    ? "Own list is empty, so this app is silent."
-                    : $"Own list: {SoundUiText.Mode(viewModel.Editor.Mode)}, {count} file(s).";
+                    ? LocalizationManager.Get("Apps_SummaryOwnListEmpty")
+                    : LocalizationManager.Format("Apps_SummaryOwnList", SoundUiText.Mode(viewModel.Editor.Mode), count);
                 break;
 
             default:
                 var defaultCount = DefaultRuleEditor.Files.Count;
                 summary = !_defaultRuleEnabled || _defaultRuleExplicitSilence
-                    ? "Uses the default sound, which is currently silent."
+                    ? LocalizationManager.Get("Apps_SummaryDefaultSilent")
                     : defaultCount == 0
-                        ? "Uses the default sound, which has no files (silent)."
-                        : $"Uses the default sound: {SoundUiText.Mode(DefaultRuleEditor.Mode)}, {defaultCount} file(s).";
+                        ? LocalizationManager.Get("Apps_SummaryDefaultNoFiles")
+                        : LocalizationManager.Format("Apps_SummaryDefault", SoundUiText.Mode(DefaultRuleEditor.Mode), defaultCount);
                 break;
         }
 
         if (!SoundEnabled)
-            summary += " Notification sounds are turned off in the Sounds tab.";
+            summary += LocalizationManager.Get("Apps_SummarySoundsOff");
 
         viewModel.SummaryText = summary;
     }
@@ -924,7 +927,7 @@ public partial class SettingsViewModel
     {
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = "Choose a local folder with WAV files",
+            Title = LocalizationManager.Get("Sounds_PickFolderTitle"),
             Multiselect = false,
         };
 
@@ -935,8 +938,8 @@ public partial class SettingsViewModel
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Filter = "WAV files (*.wav)|*.wav",
-            Title = "Import WAV files into the managed sound folder",
+            Filter = LocalizationManager.Get("Dialog_WavFilter"),
+            Title = LocalizationManager.Get("Sounds_ImportFilesTitle"),
             Multiselect = true,
         };
 

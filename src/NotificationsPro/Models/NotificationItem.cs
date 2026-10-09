@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using NotificationsPro.Helpers;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Models;
 
@@ -32,10 +33,10 @@ public class NotificationItem : INotifyPropertyChanged
         get
         {
             var elapsed = DateTime.Now - ReceivedAt;
-            if (elapsed.TotalSeconds < 10) return "just now";
-            if (elapsed.TotalSeconds < 60) return $"{(int)elapsed.TotalSeconds}s ago";
-            if (elapsed.TotalMinutes < 60) return $"{(int)elapsed.TotalMinutes}m ago";
-            return $"{(int)elapsed.TotalHours}h ago";
+            if (elapsed.TotalSeconds < 10) return LocalizationManager.Get("Time_JustNow");
+            if (elapsed.TotalSeconds < 60) return LocalizationManager.Format("Time_SecondsAgo", (int)elapsed.TotalSeconds);
+            if (elapsed.TotalMinutes < 60) return LocalizationManager.Format("Time_MinutesAgo", (int)elapsed.TotalMinutes);
+            return LocalizationManager.Format("Time_HoursAgo", (int)elapsed.TotalHours);
         }
     }
 

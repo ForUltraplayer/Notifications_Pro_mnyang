@@ -16,6 +16,7 @@ using NotificationsPro.Services;
 using NotificationsPro.ViewModels;
 using Drawing = System.Drawing;
 using WinForms = System.Windows.Forms;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Views;
 
@@ -204,10 +205,8 @@ public partial class OverlayWindow : Window
         if (suggestedLimit > currentLimit)
         {
             var result = System.Windows.MessageBox.Show(
-                $"{vm.Queue.OverflowCount} notification(s) were not shown because the visible limit is currently {currentLimit}.\n\n" +
-                "The scrollbar only helps when the currently visible cards exceed the overlay height. Notifications beyond the visible limit are discarded immediately for privacy, so they cannot be expanded later.\n\n" +
-                $"Increase the visible limit to {suggestedLimit} for future notifications?",
-                "Overflow Summary",
+                LocalizationManager.Format("Overlay_OverflowIncreaseConfirm", vm.Queue.OverflowCount, currentLimit, suggestedLimit),
+                LocalizationManager.Get("Overlay_OverflowSummaryTitle"),
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Information);
 
@@ -221,9 +220,8 @@ public partial class OverlayWindow : Window
         }
 
         System.Windows.MessageBox.Show(
-            $"{vm.Queue.OverflowCount} notification(s) were not shown while the overlay was already at its maximum retained limit of {AppSettings.MaxVisibleNotificationsUpperBound}.\n\n" +
-            "The scrollbar only helps when the currently visible cards exceed the overlay height. Notifications beyond the visible limit are discarded immediately for privacy, so they cannot be expanded later.",
-            "Overflow Summary",
+            LocalizationManager.Format("Overlay_OverflowAtMaximum", vm.Queue.OverflowCount, AppSettings.MaxVisibleNotificationsUpperBound),
+            LocalizationManager.Get("Overlay_OverflowSummaryTitle"),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
@@ -1151,7 +1149,7 @@ public partial class OverlayWindow : Window
 
         if (item != null)
         {
-            var dismissMenuItem = new MenuItem { Header = "Dismiss" };
+            var dismissMenuItem = new MenuItem { Header = LocalizationManager.Get("Overlay_MenuDismiss") };
             dismissMenuItem.Click += (_, _) =>
             {
                 if (DataContext is OverlayViewModel dismissVm)
@@ -1161,8 +1159,8 @@ public partial class OverlayWindow : Window
 
             var copyMenuItem = new MenuItem
             {
-                Header = "Copy Text",
-                ToolTip = "Copies this notification text to the Windows clipboard."
+                Header = LocalizationManager.Get("Overlay_MenuCopyText"),
+                ToolTip = LocalizationManager.Get("Overlay_MenuCopyTextTip")
             };
             copyMenuItem.Click += (_, _) =>
             {
@@ -1177,7 +1175,7 @@ public partial class OverlayWindow : Window
             if (!string.IsNullOrWhiteSpace(item.AppName))
             {
                 var isMuted = DataContext is OverlayViewModel muteCheckVm && muteCheckVm.Queue.IsAppMuted(item.AppName);
-                var muteMenuItem = new MenuItem { Header = isMuted ? $"Unmute {item.AppName}" : $"Mute {item.AppName}" };
+                var muteMenuItem = new MenuItem { Header = isMuted ? LocalizationManager.Format("Overlay_MenuUnmuteApp", item.AppName) : LocalizationManager.Format("Overlay_MenuMuteApp", item.AppName) };
                 muteMenuItem.Click += (_, _) =>
                 {
                     if (DataContext is not OverlayViewModel muteVm) return;
@@ -1188,7 +1186,7 @@ public partial class OverlayWindow : Window
                 };
                 menu.Items.Add(muteMenuItem);
 
-                var settingsForAppMenuItem = new MenuItem { Header = $"Settings for {item.AppName}..." };
+                var settingsForAppMenuItem = new MenuItem { Header = LocalizationManager.Format("Overlay_MenuSettingsForApp", item.AppName) };
                 settingsForAppMenuItem.Click += (_, _) =>
                 {
                     if (System.Windows.Application.Current is App app)
@@ -1202,8 +1200,8 @@ public partial class OverlayWindow : Window
 
         var copyAllMenuItem = new MenuItem
         {
-            Header = "Copy All to Clipboard",
-            ToolTip = "Copies all visible notification text to the Windows clipboard."
+            Header = LocalizationManager.Get("Overlay_MenuCopyAll"),
+            ToolTip = LocalizationManager.Get("Overlay_MenuCopyAllTip")
         };
         copyAllMenuItem.Click += (_, _) =>
         {
@@ -1225,7 +1223,7 @@ public partial class OverlayWindow : Window
         // Search toggle
         if (DataContext is OverlayViewModel searchVm)
         {
-            var searchMenuItem = new MenuItem { Header = searchVm.IsSearchVisible ? "Hide Search" : "Search..." };
+            var searchMenuItem = new MenuItem { Header = searchVm.IsSearchVisible ? LocalizationManager.Get("Overlay_MenuHideSearch") : LocalizationManager.Get("Overlay_MenuSearch") };
             searchMenuItem.Click += (_, _) =>
             {
                 if (DataContext is OverlayViewModel svm)
@@ -1243,7 +1241,7 @@ public partial class OverlayWindow : Window
             menu.Items.Add(searchMenuItem);
         }
 
-        var clearMenuItem = new MenuItem { Header = "Clear All" };
+        var clearMenuItem = new MenuItem { Header = LocalizationManager.Get("Overlay_MenuClearAll") };
         clearMenuItem.Click += (_, _) =>
         {
             if (DataContext is OverlayViewModel clearVm)

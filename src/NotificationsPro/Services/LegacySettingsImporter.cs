@@ -7,6 +7,7 @@ using System.IO;
 using System.Text.Json;
 using NotificationsPro.Helpers;
 using NotificationsPro.Models;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Services;
 
@@ -143,16 +144,16 @@ public sealed class LegacySettingsImporter
         var source = candidate.Source;
 
         if (_target.IsReadOnlyDueToNewerSchema)
-            return LegacySettingsImportResult.Fail("The fork settings file uses a newer schema and is read-only.", source.Kind);
+            return LegacySettingsImportResult.Fail(LocalizationManager.Get("LegacyImport_ErrorTargetNewerSchema"), source.Kind);
 
         var targetRoot = Path.GetFullPath(_target.SettingsDirectory);
         if (PathsEqual(source.RootPath, targetRoot))
-            return LegacySettingsImportResult.Fail("Source and target folders are the same.", source.Kind);
+            return LegacySettingsImportResult.Fail(LocalizationManager.Get("LegacyImport_ErrorSameFolder"), source.Kind);
 
         // Re-inspect: the file may have changed since detection.
         var fresh = Inspect(source);
         if (!fresh.CanImport)
-            return LegacySettingsImportResult.Fail(fresh.BlockReason ?? "Source cannot be imported.", source.Kind, fresh.SchemaVersion);
+            return LegacySettingsImportResult.Fail(fresh.BlockReason ?? LocalizationManager.Get("LegacyImport_ErrorCannotImport"), source.Kind, fresh.SchemaVersion);
 
         string json;
         try
@@ -161,7 +162,7 @@ public sealed class LegacySettingsImporter
         }
         catch (Exception ex)
         {
-            return LegacySettingsImportResult.Fail($"Could not read source settings ({ex.GetType().Name}).", source.Kind, fresh.SchemaVersion);
+            return LegacySettingsImportResult.Fail(LocalizationManager.Format("LegacyImport_ErrorReadFailed", ex.GetType().Name), source.Kind, fresh.SchemaVersion);
         }
 
         // Parse before touching anything so an unreadable source leaves the fork untouched.
@@ -169,7 +170,7 @@ public sealed class LegacySettingsImporter
             .Where(root => !string.IsNullOrWhiteSpace(root))
             .ToList();
         if (!SettingsManager.TryParseSettingsJson(json, settings => RebaseLegacyAssetPaths(settings, legacyRoots), out var imported))
-            return LegacySettingsImportResult.Fail("Source settings could not be parsed.", source.Kind, fresh.SchemaVersion);
+            return LegacySettingsImportResult.Fail(LocalizationManager.Get("LegacyImport_ErrorParseFailed"), source.Kind, fresh.SchemaVersion);
 
         var timestamp = _clock().ToString(SettingsManager.BackupTimestampFormat, System.Globalization.CultureInfo.InvariantCulture);
         string? settingsBackupPath = null;
@@ -191,7 +192,7 @@ public sealed class LegacySettingsImporter
             return new LegacySettingsImportResult
             {
                 Success = false,
-                Error = $"Copying files failed ({ex.GetType().Name}). Settings were not changed.",
+                Error = LocalizationManager.Format("LegacyImport_ErrorCopyFailed", ex.GetType().Name),
                 SourceKind = source.Kind,
                 SourceSchemaVersion = fresh.SchemaVersion,
                 SettingsBackupPath = settingsBackupPath,
@@ -207,7 +208,7 @@ public sealed class LegacySettingsImporter
         return new LegacySettingsImportResult
         {
             Success = _target.LastSaveStatus == SettingsSaveStatus.Saved,
-            Error = _target.LastSaveStatus == SettingsSaveStatus.Saved ? null : "Imported settings are active but could not be saved.",
+            Error = _target.LastSaveStatus == SettingsSaveStatus.Saved ? null : LocalizationManager.Get("LegacyImport_ErrorSaveFailed"),
             SourceKind = source.Kind,
             SourceSchemaVersion = fresh.SchemaVersion,
             SettingsBackupPath = settingsBackupPath,

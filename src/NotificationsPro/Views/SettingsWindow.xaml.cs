@@ -290,7 +290,9 @@ public partial class SettingsWindow : Window
 
     public string? GetSelectedTabHeader()
     {
-        return (MainTabControl.SelectedItem as TabItem)?.Header?.ToString();
+        // Invariant tab id (Tag) so a recreated window finds the tab regardless of the UI language.
+        var tab = MainTabControl.SelectedItem as TabItem;
+        return tab?.Tag as string ?? tab?.Header?.ToString();
     }
 
     public void RefreshChromeFromCurrentSettings()

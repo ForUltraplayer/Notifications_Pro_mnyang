@@ -1,4 +1,5 @@
 using System.Globalization;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.Helpers;
 
@@ -15,7 +16,7 @@ public static class TimestampTextFormatter
         if (normalizedMode == "DateTime")
             return receivedAt.ToString("g", effectiveCulture);
 
-        return string.IsNullOrWhiteSpace(relative) ? "just now" : relative;
+        return string.IsNullOrWhiteSpace(relative) ? LocalizationManager.Get("Time_JustNow") : relative;
     }
 
     public static string NormalizeMode(string? mode)

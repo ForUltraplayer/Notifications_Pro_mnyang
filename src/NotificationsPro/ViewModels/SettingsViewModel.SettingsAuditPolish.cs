@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Data;
 using System.Windows.Input;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro.ViewModels;
 
@@ -151,22 +152,22 @@ public partial class SettingsViewModel
         var settings = _settingsManager.Settings;
         var lines = new[]
         {
-            $"Status: {NotificationAccessStatusSummary}",
-            $"Detail: {NotificationAccessStatusDetail}",
-            $"Configured capture mode: {settings.NotificationCaptureMode}",
-            $"Live listener mode: {_listenerModeForDiagnostic ?? "Unknown"}",
-            $"Listener status: {_listenerStatusForDiagnostic ?? "Unknown"}",
-            $"Seen apps this session: {_queueManager.SeenAppNames.Count}",
-            $"Visible notifications: {_queueManager.VisibleNotifications.Count}",
-            $"Overflow count: {_queueManager.OverflowCount}",
-            $"Sound playback: {SafePlaybackDiagnostics()}"
+            LocalizationManager.Format("Diagnostic_Status", NotificationAccessStatusSummary),
+            LocalizationManager.Format("Diagnostic_Detail", NotificationAccessStatusDetail),
+            LocalizationManager.Format("Diagnostic_ConfiguredCaptureMode", settings.NotificationCaptureMode),
+            LocalizationManager.Format("Diagnostic_LiveListenerMode", _listenerModeForDiagnostic ?? "Unknown"),
+            LocalizationManager.Format("Diagnostic_ListenerStatus", _listenerStatusForDiagnostic ?? "Unknown"),
+            LocalizationManager.Format("Diagnostic_SeenApps", _queueManager.SeenAppNames.Count),
+            LocalizationManager.Format("Diagnostic_VisibleNotifications", _queueManager.VisibleNotifications.Count),
+            LocalizationManager.Format("Diagnostic_OverflowCount", _queueManager.OverflowCount),
+            LocalizationManager.Format("Diagnostic_SoundPlayback", SafePlaybackDiagnostics())
         };
 
         System.Windows.Clipboard.SetText(string.Join(Environment.NewLine, lines));
 
         System.Windows.MessageBox.Show(
             string.Join(Environment.NewLine + Environment.NewLine, lines),
-            "Capture Diagnostic",
+            LocalizationManager.Get("Diagnostic_Title"),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
@@ -183,11 +184,11 @@ public partial class SettingsViewModel
     {
         try
         {
-            return _playbackDiagnosticsProvider?.Invoke() ?? "Unavailable";
+            return _playbackDiagnosticsProvider?.Invoke() ?? LocalizationManager.Get("Common_Unavailable");
         }
         catch
         {
-            return "Unavailable";
+            return LocalizationManager.Get("Common_Unavailable");
         }
     }
 

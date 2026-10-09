@@ -12,6 +12,7 @@ using NotificationsPro.Views;
 using Windows.ApplicationModel;
 using WinForms = System.Windows.Forms;
 using Drawing = System.Drawing;
+using NotificationsPro.Localization;
 
 namespace NotificationsPro;
 
@@ -117,10 +118,10 @@ public partial class App : Application
         {
             System.Windows.MessageBox.Show(
                 SafeErrorDialogHelper.BuildErrorMessage(
-                    "Notifications Pro hit an unexpected UI error",
+                    LocalizationManager.Get("App_UnexpectedUiError"),
                     args.Exception,
-                    "If the app becomes unstable, restart it"),
-                "Notifications Pro Error",
+                    LocalizationManager.Get("App_UnexpectedUiErrorNextStep")),
+                LocalizationManager.Get("App_ErrorTitle"),
                 MessageBoxButton.OK, MessageBoxImage.Error);
             args.Handled = true;
         };
@@ -129,10 +130,10 @@ public partial class App : Application
             if (args.ExceptionObject is Exception ex)
                 System.Windows.MessageBox.Show(
                     SafeErrorDialogHelper.BuildErrorMessage(
-                        "Notifications Pro hit an unexpected error",
+                        LocalizationManager.Get("App_UnexpectedError"),
                         ex,
-                        "Restart the app before using it again"),
-                    "Notifications Pro Fatal Error",
+                        LocalizationManager.Get("App_UnexpectedErrorNextStep")),
+                    LocalizationManager.Get("App_FatalErrorTitle"),
                     MessageBoxButton.OK, MessageBoxImage.Error);
         };
         TaskScheduler.UnobservedTaskException += (_, args) =>
@@ -239,7 +240,7 @@ public partial class App : Application
                 _trayIcon.ShowBalloonTip(
                     5000,
                     ForkIdentity.ProductDisplayName,
-                    $"{ForkIdentity.ProductDisplayName} is running in the tray. Right-click for settings, quick theme switching, and focus mode.",
+                    LocalizationManager.Format("Tray_FirstRunBalloon", ForkIdentity.ProductDisplayName),
                     WinForms.ToolTipIcon.Info);
             }
         }
@@ -250,7 +251,7 @@ public partial class App : Application
             _trayIcon.ShowBalloonTip(
                 8000,
                 ForkIdentity.ProductDisplayName,
-                $"settings.json was written by a newer version (schema {_settingsManager.LoadedFileSchemaVersion}). Settings are read-only for this session and changes will not be saved.",
+                LocalizationManager.Format("Tray_NewerSchemaBalloon", _settingsManager.LoadedFileSchemaVersion),
                 WinForms.ToolTipIcon.Warning);
         }
 
@@ -400,22 +401,22 @@ public partial class App : Application
     {
         var icon = IconHelper.CreateTrayIcon();
 
-        _showHideItem = new WinForms.ToolStripMenuItem("Hide Overlay", null, (_, _) => ToggleOverlay());
-        _pauseResumeItem = new WinForms.ToolStripMenuItem("Pause Notifications", null, (_, _) => TogglePause());
-        _clickThroughItem = new WinForms.ToolStripMenuItem("Enable Click-Through", null, (_, _) => ToggleClickThrough());
-        _alwaysOnTopItem = new WinForms.ToolStripMenuItem("Disable Always on Top", null, (_, _) => ToggleAlwaysOnTop());
+        _showHideItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_HideOverlay"), null, (_, _) => ToggleOverlay());
+        _pauseResumeItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_PauseNotifications"), null, (_, _) => TogglePause());
+        _clickThroughItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_ClickThrough"), null, (_, _) => ToggleClickThrough());
+        _alwaysOnTopItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_AlwaysOnTop"), null, (_, _) => ToggleAlwaysOnTop());
 
         var contextMenu = new WinForms.ContextMenuStrip();
         contextMenu.BackColor = Drawing.Color.FromArgb(28, 28, 28);
         contextMenu.ForeColor = Drawing.Color.FromArgb(243, 243, 243);
         contextMenu.Renderer = new DarkMenuRenderer();
 
-        _statusItem = new WinForms.ToolStripMenuItem("Initializing...") { Enabled = false };
-        _grantAccessItem = new WinForms.ToolStripMenuItem("Open Privacy > Notifications...", null, (_, _) => OpenNotificationSettings())
+        _statusItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_Initializing")) { Enabled = false };
+        _grantAccessItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_OpenPrivacyNotifications"), null, (_, _) => OpenNotificationSettings())
         {
             Visible = true
         };
-        var retryAccessItem = new WinForms.ToolStripMenuItem("Retry Access Check", null, async (_, _) =>
+        var retryAccessItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("System_RetryAccessCheck"), null, async (_, _) =>
         {
             if (_notificationListener != null)
                 await _notificationListener.RetryAccessAsync();
@@ -432,42 +433,42 @@ public partial class App : Application
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
 
         // KR-Mnyang fork (P2-B): shared playback turn controls (existing items keep their order).
-        contextMenu.Items.Add("Stop Playback", null, (_, _) => _playbackCoordinator?.StopAll());
-        contextMenu.Items.Add("Preview Default Sound", null, (_, _) =>
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_StopPlayback"), null, (_, _) => _playbackCoordinator?.StopAll());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_PreviewDefaultSound"), null, (_, _) =>
             _playbackCoordinator?.PreviewRule(_settingsManager?.Settings.DefaultSoundRule));
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
 
         // Focus mode submenu
-        _focusModeItem = new WinForms.ToolStripMenuItem("Focus Mode");
-        _focusModeItem.DropDownItems.Add("Focus for 15 min", null, (_, _) => StartFocusMode(15));
-        _focusModeItem.DropDownItems.Add("Focus for 30 min", null, (_, _) => StartFocusMode(30));
-        _focusModeItem.DropDownItems.Add("Focus for 60 min", null, (_, _) => StartFocusMode(60));
+        _focusModeItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_FocusMode"));
+        _focusModeItem.DropDownItems.Add(LocalizationManager.Format("Tray_FocusForMinutes", 15), null, (_, _) => StartFocusMode(15));
+        _focusModeItem.DropDownItems.Add(LocalizationManager.Format("Tray_FocusForMinutes", 30), null, (_, _) => StartFocusMode(30));
+        _focusModeItem.DropDownItems.Add(LocalizationManager.Format("Tray_FocusForMinutes", 60), null, (_, _) => StartFocusMode(60));
         _focusModeItem.DropDownItems.Add(new WinForms.ToolStripSeparator());
-        _focusModeItem.DropDownItems.Add("Cancel Focus", null, (_, _) => CancelFocusMode());
+        _focusModeItem.DropDownItems.Add(LocalizationManager.Get("Tray_CancelFocus"), null, (_, _) => CancelFocusMode());
         contextMenu.Items.Add(_focusModeItem);
 
         // Quick mute submenu — populated dynamically when opened
-        _quickMuteItem = new WinForms.ToolStripMenuItem("Quick Mute App");
+        _quickMuteItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_QuickMuteApp"));
         contextMenu.Items.Add(_quickMuteItem);
 
         // Theme quick-switch submenu — populated dynamically when opened
-        _themeSwitchItem = new WinForms.ToolStripMenuItem("Switch Theme");
+        _themeSwitchItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_SwitchTheme"));
         contextMenu.Items.Add(_themeSwitchItem);
 
         // Profile quick-switch submenu — populated dynamically when opened
-        _profileSwitchItem = new WinForms.ToolStripMenuItem("Switch Profile");
+        _profileSwitchItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_SwitchProfile"));
         contextMenu.Items.Add(_profileSwitchItem);
 
         contextMenu.Opening += OnTrayMenuOpening;
 
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-        contextMenu.Items.Add("Clear All Notifications", null, (_, _) => _queueManager?.ClearAll());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_ClearAllNotifications"), null, (_, _) => _queueManager?.ClearAll());
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-        contextMenu.Items.Add("Copy Session Archive to Clipboard", null, (_, _) => ViewSessionArchive());
-        contextMenu.Items.Add("Settings...", null, (_, _) => ShowSettings());
-        contextMenu.Items.Add("About Notifications Pro", null, (_, _) => ShowAboutDialog());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_CopySessionArchive"), null, (_, _) => ViewSessionArchive());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_Settings"), null, (_, _) => ShowSettings());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_About"), null, (_, _) => ShowAboutDialog());
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
-        contextMenu.Items.Add("Quit", null, (_, _) => QuitApp());
+        contextMenu.Items.Add(LocalizationManager.Get("Tray_Quit"), null, (_, _) => QuitApp());
 
         _trayIcon = new WinForms.NotifyIcon
         {
@@ -548,7 +549,7 @@ public partial class App : Application
 
         if (_showHideItem != null)
         {
-            var label = _overlayWindow?.IsVisible == true ? "Hide Overlay" : "Show Overlay";
+            var label = _overlayWindow?.IsVisible == true ? LocalizationManager.Get("Tray_HideOverlay") : LocalizationManager.Get("Tray_ShowOverlay");
             if (hotkeysOn && s != null && !string.IsNullOrWhiteSpace(s.HotkeyToggleOverlay))
                 label += $"    {s.HotkeyToggleOverlay}";
             _showHideItem.Text = label;
@@ -557,7 +558,7 @@ public partial class App : Application
         var isPaused = _queueManager?.IsPaused == true;
         if (_pauseResumeItem != null)
         {
-            var label = isPaused ? "Resume Notifications" : "Pause Notifications";
+            var label = isPaused ? LocalizationManager.Get("Tray_ResumeNotifications") : LocalizationManager.Get("Tray_PauseNotifications");
             if (hotkeysOn && s != null && !string.IsNullOrWhiteSpace(s.HotkeyToggleDnd))
                 label += $"    {s.HotkeyToggleDnd}";
             _pauseResumeItem.Text = label;
@@ -568,20 +569,20 @@ public partial class App : Application
         {
             var isClickThrough = _settingsManager?.Settings.ClickThrough == true;
             _clickThroughItem.Text = isClickThrough
-                ? "Click-Through (Clicks Pass Through)"
-                : "Click-Through";
+                ? LocalizationManager.Get("Tray_ClickThroughOn")
+                : LocalizationManager.Get("Tray_ClickThrough");
             _clickThroughItem.Checked = isClickThrough;
         }
 
         if (_alwaysOnTopItem != null)
         {
             var isOnTop = _settingsManager?.Settings.AlwaysOnTop == true;
-            _alwaysOnTopItem.Text = "Always on Top";
+            _alwaysOnTopItem.Text = LocalizationManager.Get("Tray_AlwaysOnTop");
             _alwaysOnTopItem.Checked = isOnTop;
         }
 
         if (_focusModeItem != null && _focusTimer == null)
-            _focusModeItem.Text = "Focus Mode";
+            _focusModeItem.Text = LocalizationManager.Get("Tray_FocusMode");
 
         UpdateTrayIcon();
     }
@@ -886,12 +887,12 @@ public partial class App : Application
             {
                 // Show diagnostic status in tooltip (visible on hover)
                 // NotifyIcon.Text max is 127 chars
-                var mode = _notificationListener.ListenerMode;
+                var mode = _notificationListener.ListenerModeDisplay;
                 var isPaused = _queueManager?.IsPaused == true;
-                var pausedSuffix = isPaused ? " | Paused" : string.Empty;
+                var pausedSuffix = isPaused ? LocalizationManager.Get("Tray_TooltipPausedSuffix") : string.Empty;
                 var clickThroughSuffix = _settingsManager?.Settings.ClickThrough == true
-                    ? " | Click-through" : string.Empty;
-                var tooltip = $"{ForkIdentity.ProductDisplayName} — Listening via {mode}{pausedSuffix}{clickThroughSuffix}\n{_notificationListener.StatusMessage}";
+                    ? LocalizationManager.Get("Tray_TooltipClickThroughSuffix") : string.Empty;
+                var tooltip = LocalizationManager.Format("Tray_TooltipListening", ForkIdentity.ProductDisplayName, mode, pausedSuffix + clickThroughSuffix, _notificationListener.StatusMessage);
                 if (tooltip.Length > 127) tooltip = tooltip[..127];
                 _trayIcon.Text = tooltip;
             }
@@ -918,7 +919,7 @@ public partial class App : Application
             _settingsViewModel.UpdateNotificationAccessStatus(
                 false,
                 "Initializing",
-                "Notification listener not initialized.");
+                LocalizationManager.Get("App_ListenerNotInitialized"));
         }
 
         _settingsViewModel.UpdateHotkeyRegistrationError(_hotkeyManager?.RegistrationError);
@@ -966,7 +967,7 @@ public partial class App : Application
         }
 
         if (_focusModeItem != null)
-            _focusModeItem.Text = $"Focus Mode ({remaining.Minutes}:{remaining.Seconds:D2} left)";
+            _focusModeItem.Text = LocalizationManager.Format("Tray_FocusModeRemaining", remaining.Minutes, remaining.Seconds);
     }
 
     private void OnPresentationTimerTick(object? sender, EventArgs e)
@@ -1012,14 +1013,14 @@ public partial class App : Application
         var apps = _queueManager.SeenAppNames.OrderBy(a => a, StringComparer.OrdinalIgnoreCase).ToList();
         if (apps.Count == 0)
         {
-            _quickMuteItem.DropDownItems.Add(new WinForms.ToolStripMenuItem("(no apps seen yet)") { Enabled = false });
+            _quickMuteItem.DropDownItems.Add(new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_NoAppsSeen")) { Enabled = false });
             return;
         }
 
         foreach (var app in apps)
         {
             var isMuted = _queueManager.IsAppMuted(app);
-            var label = isMuted ? $"Unmute: {app}" : $"Mute: {app}";
+            var label = isMuted ? LocalizationManager.Format("Tray_UnmuteApp", app) : LocalizationManager.Format("Tray_MuteApp", app);
             var capturedApp = app;
             _quickMuteItem.DropDownItems.Add(label, null, (_, _) =>
             {
@@ -1063,7 +1064,7 @@ public partial class App : Application
         var profiles = _profileManager.GetProfileNames();
         if (profiles.Count == 0)
         {
-            _profileSwitchItem.DropDownItems.Add(new WinForms.ToolStripMenuItem("(no saved profiles)") { Enabled = false });
+            _profileSwitchItem.DropDownItems.Add(new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_NoSavedProfiles")) { Enabled = false });
             return;
         }
         foreach (var name in profiles)
@@ -1150,8 +1151,8 @@ public partial class App : Application
         if (archive.Count == 0)
         {
             System.Windows.MessageBox.Show(
-                "No archived notifications yet.\n\nEnable Session Archive in Settings > System to keep captured notifications in memory for the current app session.",
-                "Session Archive", MessageBoxButton.OK, MessageBoxImage.Information);
+                LocalizationManager.Get("Archive_EmptyTray"),
+                LocalizationManager.Get("Archive_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
@@ -1160,9 +1161,9 @@ public partial class App : Application
             .Select(a =>
             {
                 var elapsed = DateTime.Now - a.ReceivedAt;
-                var timeStr = elapsed.TotalMinutes < 1 ? "just now"
-                    : elapsed.TotalMinutes < 60 ? $"{(int)elapsed.TotalMinutes}m ago"
-                    : $"{(int)elapsed.TotalHours}h ago";
+                var timeStr = elapsed.TotalMinutes < 1 ? LocalizationManager.Get("Time_JustNow")
+                    : elapsed.TotalMinutes < 60 ? LocalizationManager.Format("Time_MinutesAgo", (int)elapsed.TotalMinutes)
+                    : LocalizationManager.Format("Time_HoursAgo", (int)elapsed.TotalHours);
                 var parts = new[] { a.AppName, a.Title, a.Body }
                     .Where(s => !string.IsNullOrWhiteSpace(s));
                 return $"[{timeStr}] {string.Join(" — ", parts)}";
@@ -1170,8 +1171,8 @@ public partial class App : Application
         var text = string.Join("\n", lines);
         System.Windows.Clipboard.SetText(text);
         System.Windows.MessageBox.Show(
-            $"{archive.Count} archived notification(s) copied to clipboard.\n\nNotifications Pro keeps the archive in RAM only and clears it when the app closes. Copying it here also hands the text to the Windows clipboard, which clipboard history or other clipboard tools may retain.",
-            "Session Archive", MessageBoxButton.OK, MessageBoxImage.Information);
+            LocalizationManager.Format("Archive_CopiedToClipboard", archive.Count),
+            LocalizationManager.Get("Archive_Title"), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void ShowAboutDialog()
@@ -1179,20 +1180,20 @@ public partial class App : Application
         var versionStr = GetCurrentVersionString();
         var packageIdentity = GetCurrentPackageIdentity();
         var installPath = GetCurrentInstallPath();
-        var listenerMode = _notificationListener?.ListenerMode ?? "Unknown";
-        var listenerStatus = _notificationListener?.StatusMessage ?? "No listener status available";
+        var listenerMode = _notificationListener?.ListenerModeDisplay ?? LocalizationManager.Get("Common_Unknown");
+        var listenerStatus = _notificationListener?.StatusMessage ?? LocalizationManager.Get("About_NoListenerStatus");
 
         System.Windows.MessageBox.Show(
-            $"Notifications Pro v{versionStr}\n\n" +
-            $"A Windows tray app that mirrors toast notifications\ninto a customizable always-on-top overlay.\n\n" +
-            $"Package: {packageIdentity}\n" +
-            $"Listener: {listenerMode}\n" +
-            $"Status: {listenerStatus}\n" +
-            $"Install Path: {installPath}\n" +
-            $".NET {Environment.Version}\n\n" +
-            $"License: GPL v3\n" +
-            $"GitHub: github.com/lwytch/Notifications-Pro",
-            "About Notifications Pro",
+            LocalizationManager.Format(
+                "About_Body",
+                versionStr,
+                packageIdentity,
+                listenerMode,
+                listenerStatus,
+                installPath,
+                Environment.Version,
+                "github.com/lwytch/Notifications-Pro"),
+            LocalizationManager.Get("Tray_About"),
             MessageBoxButton.OK,
             MessageBoxImage.Information);
     }
@@ -1219,7 +1220,7 @@ public partial class App : Application
         }
         catch
         {
-            return "Unpackaged / developer run";
+            return LocalizationManager.Get("About_UnpackagedRun");
         }
     }
 

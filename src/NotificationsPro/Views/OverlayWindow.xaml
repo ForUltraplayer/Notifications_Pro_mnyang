@@ -1,8 +1,9 @@
 <Window x:Class="NotificationsPro.Views.OverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:loc="clr-namespace:NotificationsPro.Localization"
         xmlns:converters="clr-namespace:NotificationsPro.Converters"
-        Title="Notifications Pro Overlay"
+        Title="{loc:Loc Overlay_NotificationsProOverlay}"
         WindowStyle="None" AllowsTransparency="True"
         Background="Transparent" ShowInTaskbar="False"
         ResizeMode="CanResize"
@@ -11,7 +12,7 @@
         Width="{Binding OverlayWidth, Mode=TwoWay}"
         MaxHeight="{Binding OverlayMaxHeight}"
         MinHeight="1" MinWidth="200"
-        AutomationProperties.Name="Notifications Pro Overlay"
+        AutomationProperties.Name="{loc:Loc Overlay_NotificationsProOverlay}"
         AutomationProperties.LiveSetting="Assertive">
 
     <Window.Resources>
@@ -576,7 +577,7 @@
                             <Binding Path="BackgroundOpacity"/>
                         </MultiBinding>
                     </Border.Background>
-                    <TextBlock Text="Waiting for notifications..."
+                    <TextBlock Text="{loc:Loc Overlay_WaitingForNotifications}"
                                FontFamily="{Binding FontFamily}"
                                FontSize="{Binding FontSize}"
                                Foreground="{Binding TextColor, Converter={StaticResource ColorToBrush}}"
@@ -588,7 +589,7 @@
                 <!-- Notification items -->
                 <ItemsControl x:Name="NotificationItemsControl"
                               ItemsSource="{Binding NotificationsView}"
-                              AutomationProperties.Name="Visible notifications"
+                              AutomationProperties.Name="{loc:Loc Overlay_VisibleNotifications}"
                               ItemTemplate="{StaticResource NotificationCardTemplate}">
                     <ItemsControl.ItemContainerStyle>
                         <Style TargetType="ContentPresenter">
@@ -605,7 +606,7 @@
                                     </MultiBinding>
                                 </Setter.Value>
                             </Setter>
-                            <Setter Property="AutomationProperties.HelpText" Value="Notification overlay item"/>
+                            <Setter Property="AutomationProperties.HelpText" Value="{loc:Loc Overlay_NotificationOverlayItem}"/>
                         </Style>
                     </ItemsControl.ItemContainerStyle>
                     <ItemsControl.GroupStyle>
@@ -707,7 +708,7 @@
                         CornerRadius="{Binding CornerRadius}"
                         HorizontalAlignment="Left"
                         Cursor="Hand"
-                        ToolTip="Scrollbars only help when the currently retained cards exceed the overlay height. Notifications beyond the retained limit are discarded immediately for privacy and only counted here.">
+                        ToolTip="{loc:Loc Overlay_ScrollbarsOnlyHelpCurrentlyRetained}">
                     <Border.Background>
                         <MultiBinding Converter="{StaticResource ColorToOpacityBrush}">
                             <Binding Path="BackgroundColor"/>
@@ -718,7 +719,7 @@
                                FontSize="{Binding FontSize}"
                                FontFamily="{Binding FontFamily}">
                         <Run Text="+"/><Run Text="{Binding Queue.OverflowCount, Mode=OneWay}"/>
-                        <Run Text=" not shown"/>
+                        <Run Text="{loc:Loc Overlay_NotShown}"/>
                     </TextBlock>
                 </Border>
             </StackPanel>
