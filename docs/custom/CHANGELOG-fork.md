@@ -6,6 +6,31 @@
 
 upstream `CHANGELOG.md`, `docs/PLAN.md`, `docs/STATUS.md`는 수정하지 않는다. 포크 변경은 이 파일과 `docs/custom/` 단계별 보고서에 기록한다.
 
+## P5 준비 — 배포 산출물·설치/제거 스크립트·전환 가이드 (2026-10-09, 미커밋)
+
+상세: `docs/custom/P5-deploy-prep.md`
+
+### 추가
+
+- `scripts/custom/publish.ps1`: Release·win-x64·프레임워크 종속(.NET 8 Desktop Runtime 필요) 언패키지 publish를 `dist\NotificationsProKR-Mnyang\`에 만든다. `LICENSE`, `THIRD_PARTY_NOTICES.md`, `licenses\`, `NOTICE-fork.md`, `CHANGELOG-fork.md`, `settings.example.json`을 복사하고 필수 파일·ko-KR 위성 어셈블리·사용자 데이터 미포함(`settings.json`, `run-state.json`, `*.wav`)·exe 버전을 검사한다.
+- `scripts/custom/install.ps1`: `%LocalAppData%\Programs\NotificationsProKR-Mnyang\`에 설치·업데이트하고 시작 메뉴 바로가기 `Notifications Pro KR-Mnyang.lnk` 1개를 만든다. 설치 경로·`-SourceDir` 경로에서 실행 중인 인스턴스에만 `--quit`을 보내 최대 10초 기다리며 강제 종료하지 않는다. 다른 경로의 포크는 경고만 한다. 로그온 작업은 등록하지 않고(읽기 전용 조회로 다른 exe 경고만), 앱을 시작하지 않는다. `-WhatIf`/`-Confirm`을 지원한다.
+- `scripts/custom/uninstall.ps1`: 정상 종료 요청 → 로그온 작업 `NotificationsProKR-Mnyang-Logon` 해제(없으면 무시, 실패 시 파일 삭제 전 중단) → 프로그램 폴더·바로가기 삭제. `%AppData%\NotificationsProKR-Mnyang`은 기본 보존하고 `-RemoveData`일 때만 목록을 보여 주고 확인 후 지운다. Windows 알림 소리 등 수동 복원 항목을 안내한다. `-WhatIf`/`-Confirm`을 지원한다.
+- `docs/custom/NOTICE-fork.md`: GPL 수정 고지(원저작 Notifications Pro/lwytch, GPL-3.0-or-later, 수정자 rudals252, 기준 `v1.1.10.37`, 소스는 로컬 저장소·공개 저장소 미정).
+- `docs/custom/MIGRATION-ko.md`: 설치·전환 가이드(원본 설정 가져오기, WAV 규칙, 앱별 원래 알림음 끄기, 기존 PS1 감시기 중지·자동 실행 해제와 이중 재생 확인, 원본 앱 공존/종료, 되돌리기, 알려진 제한, P4 §11을 포함한 사용자 검증 체크리스트).
+- `docs/custom/README-fork.md`: 포크 변경점·빌드·스크립트·문서 위치 요약.
+
+### 변경
+
+- `.gitignore`에 `dist/` 추가.
+- 앱 소스·테스트·upstream 문서는 바꾸지 않았다. 버전 접미사는 제안만 했다.
+
+### 검증
+
+- publish 성공: 파일 14개, 25.97 MB, `FileVersion 1.1.10.37`, `ko-KR\NotificationsProKR-Mnyang.resources.dll` 있음, 경고 0.
+- 스크립트 3개 구문 오류 0(PowerShell 7.6.6, Windows PowerShell 5.1). `install.ps1`·`uninstall.ps1`은 `-WhatIf`만 실행했고 부작용이 없음을 확인했다.
+- `dotnet test` 607/607 통과(출력 경로 우회).
+- **실제 설치·제거·앱 실행 검증은 미실시**(사용자 인스턴스 PID 7716 실행 중, P4 이전 빌드). OBS Studio 32.1.2는 설치돼 있으나 시험하지 않아 미검증이다. 미실시 목록과 이후 순서는 보고서 §8.
+
 ## P4 — 상주·로그온 실행·비정상 종료 안내·CLI 전달·원음 수동 음소거 안내 (2026-10-09, 미커밋)
 
 상세: `docs/custom/P4-resident-mute.md`
