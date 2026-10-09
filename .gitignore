@@ -79,3 +79,6 @@ _cv_project_export.json
 
 ###Ignore temp_Plan.md
 temp_Plan.md
+
+# Custom fork P0 local verification artifacts (isolated AppData, probe logs, patched build copy)
+.p0/
