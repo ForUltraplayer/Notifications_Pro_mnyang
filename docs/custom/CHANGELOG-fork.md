@@ -6,6 +6,31 @@
 
 upstream `CHANGELOG.md`, `docs/PLAN.md`, `docs/STATUS.md`는 수정하지 않는다. 포크 변경은 이 파일과 `docs/custom/` 단계별 보고서에 기록한다.
 
+## P2-A — WAV 재생 엔진: 규칙 선택기·재생 조정기·파일 검증·보관함 서비스 (2026-10-09, 미커밋)
+
+상세: `docs/custom/P2A-playback-engine.md`
+
+### 추가
+
+- `SoundRuleSelector`: AUMID → 표시 이름 → 기본 규칙 순으로 규칙을 찾는다. 단일/랜덤(중복 방지)/순차를 고르며 앱별 이력은 RAM에만 둔다. 후보 결정과 확정(실제 재생 시작 때만)을 분리했다. 명시적 무음은 기본으로 돌아가지 않는다.
+- `PlaybackCoordinator`: 알림 WAV·낭독·미리 듣기가 하나의 재생 권한을 쓴다. `PlaybackPolicy`(대기 5·30초, Queue/Skip, 앱별 4초 간격)를 적용한다. 설정 변경 시 대기를 취소하고, 실패하면 다음 파일을 시도하며, 작업 ID로 늦은 완료를 무시한다. `Preview`·`StopPreview`·`StopAll`·`GetDiagnostics` API를 노출했다(UI는 P2-B).
+- `WinRtSoundEngine`(`ISoundEngine`): 기존 낭독과 같은 WinRT `MediaPlayer`로 재생한다. 시작·완료·실패 이벤트, 즉시 중지, 시간 초과 감시를 제공한다. 실측 근거: `SoundPlayer.PlaySync`는 `Stop()`으로 멈추지 않았다.
+- `WavHeaderInspector`·`SoundLibraryService`: 관리 폴더와 등록 폴더 바로 아래 WAV를 나열하고 헤더와 실제 엔진으로 검증한다. 가져오기는 고유 내부 이름을 쓰고 원본을 바꾸지 않는다. 목록 제외와 실제 삭제(명시 플래그)를 분리했다. 외부 폴더는 UNC·네트워크·링크/정션을 거부한다.
+- `QueueManager.NotificationAddedWithIdentity`: `NotificationAdded` 직후 같은 조건에서 `(AppName, AppId)`로 발생한다. `OverlayAccepted` 모드도 AUMID 규칙을 쓴다.
+- 기존 "Run Capture Diagnostic"에 `Sound playback:` 카운터 한 줄을 추가했다(앱 이름·경로·본문 없음).
+
+### 변경
+
+- 알림음은 `SoundService.PlaySound` 대신 조정기로 재생한다. 기존 `DefaultSound`/`PerAppSounds`는 읽지 않는다(동결). `SoundEnabled`는 마스터 스위치다. **P2-B 전까지 기존 소리 탭의 기본/앱별 소리 변경은 재생에 반영되지 않는다.**
+- 낭독(`SpokenNotificationService`)은 재생 권한을 기다린다. 같은 알림은 WAV 다음에 낭독한다. 카드당 1회, 제거·만료·교체·전체 삭제·음성 끔 시 중지 계약은 그대로다.
+- "Test Sound" 버튼(`SoundService.PlayWav`)도 `PlaybackSink`를 거쳐 같은 재생 권한을 쓴다.
+- 연속 알림은 upstream처럼 이전 소리를 끊지 않고 대기열로 순서대로 재생한다.
+
+### 테스트
+
+- 384 → 494 (+110). 빌드 경고 0·오류 0. 변이 검사 8건을 모두 테스트가 잡았다.
+- 실제 exe 실행은 일부만 했다(토스트 3건 발행까지). 진단 읽기와 쿨다운 실측은 미완료다(보고서 §6.4·§7.2).
+
 ## P1-B — 설정 스키마 v6·이관·안전 저장, 정책/음성 경로 분리, 앱 식별 전달 (2026-10-09, 미커밋)
 
 상세: `docs/custom/P1B-schema-policy.md`

@@ -152,7 +152,8 @@ public partial class SettingsViewModel
             $"Listener status: {_listenerStatusForDiagnostic ?? "Unknown"}",
             $"Seen apps this session: {_queueManager.SeenAppNames.Count}",
             $"Visible notifications: {_queueManager.VisibleNotifications.Count}",
-            $"Overflow count: {_queueManager.OverflowCount}"
+            $"Overflow count: {_queueManager.OverflowCount}",
+            $"Sound playback: {SafePlaybackDiagnostics()}"
         };
 
         System.Windows.Clipboard.SetText(string.Join(Environment.NewLine, lines));
@@ -162,6 +163,26 @@ public partial class SettingsViewModel
             "Capture Diagnostic",
             MessageBoxButton.OK,
             MessageBoxImage.Information);
+    }
+
+    private Func<string?>? _playbackDiagnosticsProvider;
+
+    /// <summary>KR-Mnyang fork: supplies the playback coordinator's counter summary (no app names or text).</summary>
+    public void ConfigurePlaybackDiagnostics(Func<string?> provider)
+    {
+        _playbackDiagnosticsProvider = provider;
+    }
+
+    private string SafePlaybackDiagnostics()
+    {
+        try
+        {
+            return _playbackDiagnosticsProvider?.Invoke() ?? "Unavailable";
+        }
+        catch
+        {
+            return "Unavailable";
+        }
     }
 
     private string? _listenerModeForDiagnostic;

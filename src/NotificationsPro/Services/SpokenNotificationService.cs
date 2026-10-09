@@ -13,6 +13,10 @@ namespace NotificationsPro.Services;
 /// <summary>
 /// Speaks notifications from the live in-memory queue using Windows-installed speech voices.
 /// Overflow content is never spoken because it is never retained.
+/// KR-Mnyang fork: when an <see cref="IPlaybackGate"/> is supplied, each spoken item first waits for the
+/// shared playback turn (after the notification's own WAV), so speech, WAVs and previews never overlap.
+/// While waiting, the item is the current item: card removal/expiry/replacement, clear-all, speech
+/// disable/pause and settings re-evaluation cancel the wait through the existing stop paths.
 /// </summary>
 public sealed class SpokenNotificationService : IDisposable
 {
@@ -25,6 +29,7 @@ public sealed class SpokenNotificationService : IDisposable
     private readonly Queue<NotificationItem> _pendingItems = new();
     private readonly MediaPlayer _mediaPlayer;
     private readonly SpokenNotificationPlaybackTracker _playbackTracker = new();
+    private readonly IPlaybackGate? _playbackGate;
 
     private int _playbackGeneration;
     private bool _isSynthesizing;
@@ -34,12 +39,20 @@ public sealed class SpokenNotificationService : IDisposable
     private MediaSource? _currentSource;
     private bool _wasSpeechEnabled;
     private bool _disposed;
+    private PlaybackLease? _playbackLease;
+    private bool _awaitingPlaybackTurn;
 
     public SpokenNotificationService(QueueManager queueManager, SettingsManager settingsManager, Dispatcher dispatcher)
+        : this(queueManager, settingsManager, dispatcher, playbackGate: null)
+    {
+    }
+
+    public SpokenNotificationService(QueueManager queueManager, SettingsManager settingsManager, Dispatcher dispatcher, IPlaybackGate? playbackGate)
     {
         _queueManager = queueManager;
         _settingsManager = settingsManager;
         _dispatcher = dispatcher;
+        _playbackGate = playbackGate;
 
         _mediaPlayer = new MediaPlayer();
         _mediaPlayer.CommandManager.IsEnabled = false;
@@ -207,17 +220,19 @@ public sealed class SpokenNotificationService : IDisposable
 
     private void OnMediaEnded(MediaPlayer sender, object args)
     {
-        _dispatcher.InvokeAsync(() =>
-        {
-            if (_disposed)
-                return;
+        _dispatcher.InvokeAsync(CompleteCurrentSpeech);
+    }
 
-            if (_currentItem != null)
-                _playbackTracker.MarkSpoken(_currentItem);
+    private void CompleteCurrentSpeech()
+    {
+        if (_disposed)
+            return;
 
-            StopCurrentPlayback(clearPending: false);
-            TryStartNext();
-        });
+        if (_currentItem != null)
+            _playbackTracker.MarkSpoken(_currentItem);
+
+        StopCurrentPlayback(clearPending: false);
+        TryStartNext();
     }
 
     private void OnMediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
@@ -264,6 +279,10 @@ public sealed class SpokenNotificationService : IDisposable
 
     private void TryStartNext()
     {
+        // Every path that ends or abandons speech comes through here; return the shared turn once idle.
+        if (_currentItem == null && !_isSynthesizing)
+            ReleasePlaybackTurn();
+
         if (_disposed || !ShouldUseSpeech() || _currentItem != null || _isSynthesizing)
             return;
 
@@ -279,8 +298,82 @@ public sealed class SpokenNotificationService : IDisposable
             return;
         }
 
-        StartSpeaking(item);
+        if (_playbackGate == null)
+        {
+            StartSpeaking(item);
+            return;
+        }
+
+        RequestPlaybackTurn(item);
     }
+
+    private void RequestPlaybackTurn(NotificationItem item)
+    {
+        var generation = ++_playbackGeneration;
+        _currentItem = item;
+        _awaitingPlaybackTurn = true;
+        PlaybackLease? lease = null;
+        lease = _playbackGate!.RequestSpeech(
+            onGranted: () => _dispatcher.InvokeAsync(() => OnPlaybackTurnGranted(item, generation)),
+            onRevoked: () => _dispatcher.InvokeAsync(() => OnPlaybackTurnRevoked(lease)));
+        _playbackLease = lease;
+    }
+
+    private void OnPlaybackTurnGranted(NotificationItem item, int generation)
+    {
+        if (_disposed
+            || generation != _playbackGeneration
+            || !_awaitingPlaybackTurn
+            || !ReferenceEquals(_currentItem, item))
+        {
+            return;
+        }
+
+        _awaitingPlaybackTurn = false;
+        _currentItem = null;
+        StartSpeaking(item);
+
+        // StartSpeaking returns early (without speaking) on some guards; release the turn in that case.
+        if (_currentItem == null && !_isSynthesizing)
+            TryStartNext();
+    }
+
+    private void OnPlaybackTurnRevoked(PlaybackLease? lease)
+    {
+        // Ignore a revoke that arrives after this lease was already replaced by a newer one.
+        if (_disposed || lease == null || !ReferenceEquals(_playbackLease, lease))
+            return;
+
+        // Explicit stop-all: drop the current and pending items for good (they are not re-read later).
+        if (_currentItem != null)
+            _playbackTracker.MarkSpoken(_currentItem);
+        foreach (var pending in _pendingItems)
+            _playbackTracker.MarkSpoken(pending);
+        _pendingItems.Clear();
+
+        StopCurrentPlayback(clearPending: false);
+    }
+
+    private void ReleasePlaybackTurn()
+    {
+        _awaitingPlaybackTurn = false;
+        var lease = _playbackLease;
+        _playbackLease = null;
+        lease?.Release();
+    }
+
+    /// <summary>
+    /// Test seam: replaces real synthesis/playback once the item is about to be spoken. Returning false
+    /// simulates a synthesis failure (handled exactly like the real failure path).
+    /// </summary>
+    internal Func<NotificationItem, bool>? SpeakOverrideForTesting { get; set; }
+
+    /// <summary>Test seam: runs the same completion path as the media player's MediaEnded.</summary>
+    internal void CompleteCurrentSpeechForTesting() => CompleteCurrentSpeech();
+
+    internal NotificationItem? CurrentItemForTesting => _currentItem;
+
+    internal bool IsAwaitingPlaybackTurnForTesting => _awaitingPlaybackTurn;
 
     private async void StartSpeaking(NotificationItem item)
     {
@@ -306,6 +399,19 @@ public sealed class SpokenNotificationService : IDisposable
         var generation = ++_playbackGeneration;
         _currentItem = item;
         _isSynthesizing = false;
+
+        if (SpeakOverrideForTesting != null)
+        {
+            if (!SpeakOverrideForTesting(item))
+            {
+                // Same handling as a synthesis failure below.
+                _currentItem = null;
+                _isSynthesizing = false;
+                TryStartNext();
+            }
+
+            return;
+        }
 
         if (TryStartSystemSpeechPlayback(item, spokenText, settings, generation))
             return;
@@ -423,6 +529,7 @@ public sealed class SpokenNotificationService : IDisposable
 
         _currentItem = null;
         _isSynthesizing = false;
+        ReleasePlaybackTurn();
 
         if (clearPending)
         {

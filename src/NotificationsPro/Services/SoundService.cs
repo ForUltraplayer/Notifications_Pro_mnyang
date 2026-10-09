@@ -10,6 +10,10 @@ namespace NotificationsPro.Services;
 /// Plays notification sounds — Windows registry sounds or custom WAV files.
 /// Per-app sounds override the default sound.
 /// Sound values stored in settings are WAV file paths (or "None").
+/// KR-Mnyang fork: notification sounds now go through <see cref="PlaybackCoordinator"/> (rule engine).
+/// This class keeps the Windows sound list and the legacy "Test Sound" path; when
+/// <see cref="PlaybackSink"/> is set, <see cref="PlayWav"/> hands the file to the coordinator as a
+/// preview so it shares the single playback turn instead of starting its own player.
 /// </summary>
 public static class SoundService
 {
@@ -140,12 +144,25 @@ public static class SoundService
         PlayWav(wavPath);
     }
 
+    /// <summary>
+    /// When set (by the app at startup), receives the expanded WAV path instead of the local
+    /// <see cref="SoundPlayer"/>. Null restores the upstream fire-and-forget behavior.
+    /// </summary>
+    public static Action<string>? PlaybackSink { get; set; }
+
     /// <summary>Plays a WAV file by path. "None" or empty string = no sound.</summary>
     public static void PlayWav(string? wavPath)
     {
         if (string.IsNullOrWhiteSpace(wavPath) || wavPath == "None") return;
 
         var expanded = Environment.ExpandEnvironmentVariables(wavPath);
+        var sink = PlaybackSink;
+        if (sink != null)
+        {
+            try { sink(expanded); } catch { /* Ignore playback failures */ }
+            return;
+        }
+
         try
         {
             if (File.Exists(expanded))

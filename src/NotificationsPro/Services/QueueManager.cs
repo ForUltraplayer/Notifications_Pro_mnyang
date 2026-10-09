@@ -80,6 +80,14 @@ public class QueueManager : BaseViewModel
     /// </summary>
     public event Action<NotificationAcceptedEventArgs>? NotificationAccepted;
 
+    /// <summary>
+    /// KR-Mnyang fork: raised right after <see cref="NotificationAdded"/> under exactly the same condition
+    /// (the overlay queue kept the notification), with the app display name and the AUMID when known
+    /// (null otherwise). Lets the OverlayAccepted sound path match AUMID rules without changing the
+    /// upstream <see cref="NotificationAdded"/> signature. Carries no title/body.
+    /// </summary>
+    public event Action<string, string?>? NotificationAddedWithIdentity;
+
     public QueueManager(SettingsManager settingsManager)
     {
         _settingsManager = settingsManager;
@@ -602,6 +610,7 @@ public class QueueManager : BaseViewModel
             return;
 
         NotificationAdded?.Invoke(item.AppName);
+        NotificationAddedWithIdentity?.Invoke(item.AppName, item.AppId);
         NotificationDisplayed?.Invoke(item);
     }
 

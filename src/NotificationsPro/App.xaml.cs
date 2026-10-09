@@ -29,6 +29,7 @@ public partial class App : Application
     private HotkeyManager? _hotkeyManager;
     private SpokenNotificationService? _spokenNotificationService;
     private AudioDispatchSubscription? _audioDispatchSubscription;
+    private PlaybackCoordinator? _playbackCoordinator;
 
     private WinForms.ToolStripMenuItem? _showHideItem;
     private WinForms.ToolStripMenuItem? _pauseResumeItem;
@@ -153,7 +154,19 @@ public partial class App : Application
         SyncStartupTaskState();
 
         _queueManager = new QueueManager(_settingsManager);
-        _spokenNotificationService = new SpokenNotificationService(_queueManager, _settingsManager, Dispatcher);
+
+        // KR-Mnyang fork (P2-A): one playback turn shared by notification WAVs, narration and previews.
+        var soundEngine = new WinRtSoundEngine();
+        var settingsManagerForSounds = _settingsManager;
+        var soundLibrary = new SoundLibraryService(() => settingsManagerForSounds.Settings, soundEngine);
+        _playbackCoordinator = new PlaybackCoordinator(
+            _settingsManager,
+            soundEngine,
+            soundLibrary,
+            action => Dispatcher.BeginInvoke(action));
+        Services.SoundService.PlaybackSink = path => _playbackCoordinator?.Preview(path);
+
+        _spokenNotificationService = new SpokenNotificationService(_queueManager, _settingsManager, Dispatcher, _playbackCoordinator);
 
         _notificationListener = new NotificationListener(_queueManager, Dispatcher, _settingsManager);
         _notificationListener.StatusChanged += UpdateStatusItem;
@@ -164,15 +177,16 @@ public partial class App : Application
             _notificationListener?.RetryAccessAsync() ?? Task.CompletedTask);
         _settingsViewModel.ConfigureRefreshSettingsWindow(RefreshSettingsWindowAfterBulkApply);
         _settingsViewModel.ConfigureSettingsWindowBulkApplyState(SetSettingsWindowBulkApplyState);
+        _settingsViewModel.ConfigurePlaybackDiagnostics(() => _playbackCoordinator?.GetDiagnostics().ToSummary());
         UpdateSettingsDiagnostics();
 
         // Play notification sounds. AudioDispatchMode picks exactly one trigger:
-        // OverlayAccepted = NotificationAdded (upstream), PolicyAccepted = NotificationAccepted.
-        // Playback itself is still the upstream single-file SoundService (rule engine: P2).
+        // OverlayAccepted = NotificationAddedWithIdentity (same condition as upstream NotificationAdded),
+        // PolicyAccepted = NotificationAccepted. Rules, queue and cooldown live in PlaybackCoordinator.
         _audioDispatchSubscription = new AudioDispatchSubscription(
             _queueManager,
             _settingsManager,
-            (appName, _) => Services.SoundService.PlaySound(appName, _settingsManager.Settings));
+            (appName, appId) => _playbackCoordinator?.EnqueueNotificationSound(appName, appId));
 
         // Update tray icon badge when notification count changes
         ((System.Collections.Specialized.INotifyCollectionChanged)_queueManager.VisibleNotifications)
@@ -1219,6 +1233,7 @@ public partial class App : Application
             SystemParameters.StaticPropertyChanged -= _highContrastHandler;
         _spokenNotificationService?.Dispose();
         _audioDispatchSubscription?.Dispose();
+        DisposePlayback();
         _hotkeyManager?.Dispose();
         _notificationListener?.Stop();
         _settingsManager?.Save();
@@ -1228,10 +1243,17 @@ public partial class App : Application
         Shutdown();
     }
 
+    private void DisposePlayback()
+    {
+        Services.SoundService.PlaybackSink = null;
+        _playbackCoordinator?.Dispose();
+    }
+
     protected override void OnExit(ExitEventArgs e)
     {
         _spokenNotificationService?.Dispose();
         _audioDispatchSubscription?.Dispose();
+        DisposePlayback();
         _trayIcon?.Dispose();
         _singleInstanceGuard?.Dispose();
         _singleInstanceGuard = null;

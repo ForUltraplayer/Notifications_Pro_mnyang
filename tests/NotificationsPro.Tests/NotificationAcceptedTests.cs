@@ -1,6 +1,6 @@
 // @file NotificationAcceptedTests.cs
 // @author: rudals252
-// @brief QueueManager.NotificationAccepted(정책 통과) 계약 테스트: 오버플로 시 NotificationAdded와의 차이, 기존 Added/Displayed 시점 유지, 모든 정책 거절 시 미발생, 내용 중복 ON/OFF, AUMID 전달, 모드별 단일 구독.
+// @brief QueueManager.NotificationAccepted(정책 통과) 계약 테스트: 오버플로 시 NotificationAdded와의 차이, 기존 Added/Displayed 시점 유지, 모든 정책 거절 시 미발생, 내용 중복 ON/OFF, AUMID 전달, 모드별 단일 구독. P2-A: NotificationAddedWithIdentity 시점·조건.
 
 using NotificationsPro.Models;
 using NotificationsPro.Services;
@@ -261,7 +261,8 @@ public class NotificationAcceptedTests
         queue.AddNotification("B", "2", "y", "B.App"); // overflow
 
         Assert.Equal(AudioDispatchMode.OverlayAccepted, subscription.ActiveMode);
-        Assert.Equal(new[] { ("A", (string?)null) }, plays);
+        // P2-A: the OverlayAccepted path now carries the AUMID too (NotificationAddedWithIdentity).
+        Assert.Equal(new[] { ("A", (string?)"A.App") }, plays);
     }
 
     [Fact]
@@ -297,7 +298,7 @@ public class NotificationAcceptedTests
 
         Assert.Equal(AudioDispatchMode.OverlayAccepted, subscription.ActiveMode);
         Assert.Equal(2, plays.Count);
-        Assert.Null(plays[1].Id);
+        Assert.Equal("B.App", plays[1].Id); // P2-A: OverlayAccepted now also carries the AUMID
     }
 
     [Fact]
@@ -326,5 +327,67 @@ public class NotificationAcceptedTests
 
         Assert.Null(subscription.ActiveMode);
         Assert.Empty(plays);
+    }
+
+    // ---- P2-A: NotificationAddedWithIdentity ----
+
+    [Fact]
+    public void AddedWithIdentity_FiresRightAfterAdded_BeforeDisplayed_WithAumid()
+    {
+        var queue = new QueueManager(CreateSettings(maxVisible: 5));
+        var order = new List<string>();
+        var identities = new List<(string App, string? Id)>();
+        queue.NotificationAccepted += args => order.Add("Accepted");
+        queue.NotificationAdded += _ => order.Add("Added");
+        queue.NotificationAddedWithIdentity += (app, id) => { order.Add("AddedWithIdentity"); identities.Add((app, id)); };
+        queue.NotificationDisplayed += _ => order.Add("Displayed");
+
+        queue.AddNotification("Slack", "Hi", "There", "Slack.App");
+        queue.AddNotification("Reader", "Hi", "There");
+
+        Assert.Equal(new[] { "Accepted", "Added", "AddedWithIdentity", "Displayed", "Accepted", "Added", "AddedWithIdentity", "Displayed" }, order);
+        Assert.Equal(new[] { ("Slack", (string?)"Slack.App"), ("Reader", (string?)null) }, identities);
+    }
+
+    [Fact]
+    public void AddedWithIdentity_FollowsAddedExactly_ForOverflowReplaceAndPreview()
+    {
+        var queue = new QueueManager(CreateSettings(maxVisible: 1));
+        var added = new List<string>();
+        var withIdentity = new List<string>();
+        queue.NotificationAdded += app => added.Add(app);
+        queue.NotificationAddedWithIdentity += (app, _) => withIdentity.Add(app);
+
+        queue.AddNotification("A", "1", "x", "A.App");
+        queue.AddNotification("B", "2", "y", "B.App"); // overflow: neither event
+        queue.AddPreviewNotification("Preview", "t", "b");
+
+        Assert.Equal(added, withIdentity);
+        Assert.Equal(new[] { "A" }, withIdentity);
+    }
+
+    [Fact]
+    public void ExistingAddedSubscribers_StillReceiveOnlyTheAppName()
+    {
+        var queue = new QueueManager(CreateSettings(maxVisible: 5));
+        var received = new List<string>();
+        Action<string> legacyHandler = app => received.Add(app);
+        queue.NotificationAdded += legacyHandler;
+
+        queue.AddNotification("Slack", "Hi", "There", "Slack.App");
+
+        Assert.Equal(new[] { "Slack" }, received);
+    }
+
+    [Fact]
+    public void Dispatch_OverlayAccepted_DoesNotDoublePlay_WhenAddedAndAddedWithIdentityBothFire()
+    {
+        var (queue, settings, plays, subscription) = CreateDispatch(AudioDispatchMode.OverlayAccepted, maxVisible: 5);
+
+        queue.AddNotification("A", "1", "x", "A.App");
+        queue.AddNotification("B", "2", "y");
+
+        Assert.Equal(new[] { ("A", (string?)"A.App"), ("B", (string?)null) }, plays);
+        subscription.Dispose();
     }
 }
