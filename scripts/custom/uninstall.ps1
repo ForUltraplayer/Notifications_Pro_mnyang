@@ -57,7 +57,7 @@ function Request-Quit([object]$proc) {
         }
         Start-Sleep -Milliseconds 250
     }
-    throw "PID $($proc.ProcessId)가 $quitTimeoutSeconds초 안에 종료되지 않았습니다. 강제 종료하지 않습니다. 트레이 메뉴에서 종료한 뒤 다시 실행하세요. 아무것도 지우지 않았습니다."
+    throw "PID $($proc.ProcessId)가 ${quitTimeoutSeconds}초 안에 종료되지 않았습니다. 강제 종료하지 않습니다. 트레이 메뉴에서 종료한 뒤 다시 실행하세요. 아무것도 지우지 않았습니다."
 }
 
 Write-Output "== $productName 제거 =="

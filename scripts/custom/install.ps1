@@ -60,7 +60,7 @@ function Request-Quit([object]$proc) {
         }
         Start-Sleep -Milliseconds 250
     }
-    throw "PID $($proc.ProcessId)가 $quitTimeoutSeconds초 안에 종료되지 않았습니다. 강제 종료하지 않습니다. 트레이 메뉴에서 종료한 뒤 다시 실행하세요. 파일은 바꾸지 않았습니다."
+    throw "PID $($proc.ProcessId)가 ${quitTimeoutSeconds}초 안에 종료되지 않았습니다. 강제 종료하지 않습니다. 트레이 메뉴에서 종료한 뒤 다시 실행하세요. 파일은 바꾸지 않았습니다."
 }
 
 function Get-LogonTaskCommand {
@@ -177,7 +177,7 @@ if ($WhatIfPreference) {
     Write-Output 'WhatIf: 실제로 바뀐 것은 없습니다.'
 } else {
     $verb = if ($isUpdate) { '업데이트' } else { '설치' }
-    Write-Output "$verb 완료: 파일 $copied개 복사. 앱은 시작하지 않았습니다."
+    Write-Output "$verb 완료: 파일 ${copied}개 복사. 앱은 시작하지 않았습니다."
     if ($quitDone) { Write-Output '실행 중이던 인스턴스를 종료했습니다. 자동으로 다시 시작하지 않습니다.' }
     Write-Output "시작: 시작 메뉴 '$productName' 또는 $installExe"
     Write-Output '설정·소리·프로필(%AppData%\NotificationsProKR-Mnyang)은 그대로 유지됩니다.'
