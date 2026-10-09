@@ -246,7 +246,11 @@ public class SettingsManager
 
     public void ResetToDefaults()
     {
-        Settings = new AppSettings();
+        // KR-Mnyang fork (P3): "reset all" keeps this PC's local-only values (UI language, external
+        // sound folders, manual mute confirmations, restart intent); see LocalOnlySettingsHelper.
+        var defaults = new AppSettings();
+        LocalOnlySettingsHelper.CopyLocalOnly(Settings, defaults);
+        Settings = defaults;
         Save();
         SettingsChanged?.Invoke();
     }

@@ -5254,6 +5254,38 @@ Its files are removed from every sound list. Nothing is deleted from disk.</valu
     <value>Keep a temporary record of notifications received this session. RAM only — never saved to disk, cleared when the app closes.</value>
     <comment>SettingsWindow.xaml:3554:ToolTip</comment>
   </data>
+  <data name="System_Language" xml:space="preserve">
+    <value>Language</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageHeader" xml:space="preserve">
+    <value>LANGUAGE</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageHeaderTip" xml:space="preserve">
+    <value>Display language of this app on this PC. It is not saved in profiles or exports.</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageKorean" xml:space="preserve">
+    <value>한국어</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageOsDefault" xml:space="preserve">
+    <value>OS default</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageRestartNote" xml:space="preserve">
+    <value>Most text changes immediately. Messages already shown, open dialogs, monitor and voice list names and the listener status line change on their next update or refresh; restart the app to apply the language everywhere.</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
+  <data name="System_LanguageTip" xml:space="preserve">
+    <value>OS default follows the Windows display language: Korean when it is Korean, otherwise English.</value>
+    <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
+  </data>
   <data name="System_MaxArchiveItems" xml:space="preserve">
     <value>Max archive items</value>
     <comment>SettingsWindow.xaml:3565:Text</comment>

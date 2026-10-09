@@ -149,6 +149,7 @@ public partial class App : Application
 
         _settingsManager = new SettingsManager();
         _settingsManager.Load();
+        InitializeUiLanguage();
         _themeManager = new ThemeManager();
         _profileManager = new ProfileManager();
 
@@ -400,7 +401,23 @@ public partial class App : Application
     private void SetupTrayIcon()
     {
         var icon = IconHelper.CreateTrayIcon();
+        var contextMenu = CreateTrayContextMenu();
 
+        _trayIcon = new WinForms.NotifyIcon
+        {
+            Icon = icon,
+            Text = ForkIdentity.ProductDisplayName,
+            ContextMenuStrip = contextMenu,
+            Visible = true
+        };
+
+        _trayIcon.DoubleClick += (_, _) => ShowSettings();
+        UpdateMenuLabels();
+    }
+
+    /// <summary>Builds the tray menu (also used to regenerate it after a UI language change).</summary>
+    private WinForms.ContextMenuStrip CreateTrayContextMenu()
+    {
         _showHideItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_HideOverlay"), null, (_, _) => ToggleOverlay());
         _pauseResumeItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_PauseNotifications"), null, (_, _) => TogglePause());
         _clickThroughItem = new WinForms.ToolStripMenuItem(LocalizationManager.Get("Tray_ClickThrough"), null, (_, _) => ToggleClickThrough());
@@ -470,16 +487,7 @@ public partial class App : Application
         contextMenu.Items.Add(new WinForms.ToolStripSeparator());
         contextMenu.Items.Add(LocalizationManager.Get("Tray_Quit"), null, (_, _) => QuitApp());
 
-        _trayIcon = new WinForms.NotifyIcon
-        {
-            Icon = icon,
-            Text = ForkIdentity.ProductDisplayName,
-            ContextMenuStrip = contextMenu,
-            Visible = true
-        };
-
-        _trayIcon.DoubleClick += (_, _) => ShowSettings();
-        UpdateMenuLabels();
+        return contextMenu;
     }
 
     private void ShowOverlay()

@@ -6,6 +6,32 @@
 
 upstream `CHANGELOG.md`, `docs/PLAN.md`, `docs/STATUS.md`는 수정하지 않는다. 포크 변경은 이 파일과 `docs/custom/` 단계별 보고서에 기록한다.
 
+## P3 — 한국어/영어 지원 (2026-10-09, 미커밋)
+
+상세: `docs/custom/P3-localization.md`
+
+### 추가
+
+- `.resx` 리소스(`Resources/Strings.resx` 영어 기준 + `Strings.ko-KR.resx`, 키 1,365개)와 `Localization/`(`LocalizationManager`, `{loc:Loc}`·`{loc:LocFormat}`·`{loc:LocOption}` 마크업 확장). 위성 어셈블리 `ko-KR\NotificationsProKR-Mnyang.resources.dll`.
+- 시스템 탭 ‘언어: 한국어 / English / OS 기본값’. 선택은 이 PC 전용(`UiLanguage`)이며 즉시 적용된다(XAML 바인딩 갱신, 트레이 메뉴 재생성, 즉시 바뀌지 않는 곳은 안내문). 신규 설치·OS 기본값은 OS UI 문화권이 `ko`로 시작하면 한국어, 그 외 영어.
+- 콤보 저장값(글꼴 굵기·정렬·모드·애니메이션·아이콘 프리셋 등)은 표시만 번역하고 저장값은 그대로 둔다.
+- `NotificationListener.ListenerModeDisplay`(표시용). `ListenerMode`는 식별자로 유지.
+
+### 변경
+
+- 설정창 전체 탭·오버레이·트레이 메뉴/툴팁/풍선·메시지 상자·VM 상태 문구·리스너 상태·단축키 오류·원본 가져오기·접근성 이름의 영어 문자열을 리소스 호출로 바꿨다. `Helpers/SoundUiText.cs`는 enum→키 연결만 남겼다.
+- 전체 초기화(`ResetToDefaults`)가 이 PC 전용 값 4개(UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash)를 보존한다.
+- 탭 머리글이 번역되므로 탭 이동은 `TabItem.Tag`(영어 탭 ID) 기준이다.
+- 시간 표시(`DateTime`)·Voice Access 카드 이름의 날짜 형식은 UI 문화권을 따른다(영어 UI는 기존과 같음). 저장 형식은 변경 없음.
+- Help ‘Sounds all sound the same’의 "Browse" 안내를 "Import files"로 정정했다(P2-B 이후 없는 버튼).
+- Help 탭 2열 표 레이블에 줄바꿈을 넣었다(한국어 길이).
+
+### 테스트
+
+- 521 → 554 (+33). 빌드 경고 0·오류 0(실행 중인 포크가 `bin\Debug`를 잠가 출력 경로를 바꿔 확인). 그룹 A만 적용한 상태도 빌드 0/0·테스트 551 통과.
+- 키 대응·자리표시자·서식 유효성·번역 금지 대상 미포함·기술 토큰 보존·참조 키 존재·미사용 키 없음·누락 시 영어 대체·OS 기본값 결정·초기화 보존·전환 후 재생 대기/설정/undo 유지.
+- 실제 XAML을 화면에 띄우지 않고 로드한 검사: 영어·한국어 전 탭 미해결 키 0, 바인딩 오류 0, 열린 창 언어 전환 동작 확인. **실제 앱 실행·트레이·배율·IME 확인은 미실시**(보고서 §6.3, §7).
+
 ## P2-B — WAV 기능 UI: 소리 탭·앱 탭·트레이, P2-A 후속 (2026-10-09, 미커밋)
 
 상세: `docs/custom/P2B-sound-ui.md`

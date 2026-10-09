@@ -3963,6 +3963,30 @@ Notifications Pro는 보관함을 RAM에만 두고 앱을 닫으면 지웁니다
   <data name="System_KeepTemporaryRecordNotificationsReceived" xml:space="preserve">
     <value>이번 세션에 받은 알림을 임시로 기록합니다. RAM에만 있으며 디스크에 저장하지 않고 앱을 닫으면 지워집니다.</value>
   </data>
+  <data name="System_Language" xml:space="preserve">
+    <value>언어</value>
+  </data>
+  <data name="System_LanguageEnglish" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="System_LanguageHeader" xml:space="preserve">
+    <value>언어</value>
+  </data>
+  <data name="System_LanguageHeaderTip" xml:space="preserve">
+    <value>이 PC에서 이 앱이 표시할 언어입니다. 프로필과 내보내기에는 저장하지 않습니다.</value>
+  </data>
+  <data name="System_LanguageKorean" xml:space="preserve">
+    <value>한국어</value>
+  </data>
+  <data name="System_LanguageOsDefault" xml:space="preserve">
+    <value>OS 기본값</value>
+  </data>
+  <data name="System_LanguageRestartNote" xml:space="preserve">
+    <value>대부분의 문구는 바로 바뀝니다. 이미 표시된 메시지, 열려 있는 대화상자, 모니터·음성 목록 이름, 수신 상태 문구는 다음 갱신이나 새로 고침 때 바뀌며, 모든 곳에 적용하려면 앱을 다시 시작하세요.</value>
+  </data>
+  <data name="System_LanguageTip" xml:space="preserve">
+    <value>OS 기본값은 Windows 표시 언어를 따릅니다. 한국어이면 한국어, 그 외에는 영어입니다.</value>
+  </data>
   <data name="System_MaxArchiveItems" xml:space="preserve">
     <value>최대 보관 항목 수</value>
   </data>

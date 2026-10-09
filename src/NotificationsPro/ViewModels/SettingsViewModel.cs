@@ -3174,6 +3174,13 @@ public class PerAppConfigEntry : BaseViewModel
 
     public void RefreshHasOverrides() => OnPropertyChanged(nameof(HasOverrides));
 
+    /// <summary>KR-Mnyang fork (P3): re-reads the computed display text after a UI language change.</summary>
+    internal void RefreshDisplayText()
+    {
+        OnPropertyChanged(nameof(BackgroundImageDisplay));
+        OnPropertyChanged(nameof(BackgroundImageToolTip));
+    }
+
     public void ApplyDefaults()
     {
         _sound = DefaultOption;

@@ -3544,6 +3544,25 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
                     <StackPanel>
 
+                        <!-- KR-Mnyang fork (P3): UI language (this PC only; not in profiles/exports/undo) -->
+                        <Border Style="{StaticResource SectionHeaderPanel}">
+                            <TextBlock Text="{loc:Loc System_LanguageHeader}" Style="{StaticResource SectionHeader}"
+                                       ToolTip="{loc:Loc System_LanguageHeaderTip}"/>
+                        </Border>
+
+                        <TextBlock Text="{loc:Loc System_Language}" Style="{StaticResource SettingLabel}"
+                                   ToolTip="{loc:Loc System_LanguageTip}"/>
+                        <ComboBox Style="{StaticResource SettingsComboBox}"
+                                  ItemContainerStyle="{StaticResource SettingsComboBoxItem}"
+                                  ItemsSource="{x:Static vm:SettingsViewModel.UiLanguageOptions}"
+                                  DisplayMemberPath="Label" SelectedValuePath="Value"
+                                  SelectedValue="{Binding SelectedUiLanguage}"
+                                  AutomationProperties.AutomationId="UiLanguageComboBox"
+                                  AutomationProperties.Name="{loc:Loc System_Language}"
+                                  Margin="0,4,0,0"
+                                  ToolTip="{loc:Loc System_LanguageTip}"/>
+                        <TextBlock Text="{loc:Loc System_LanguageRestartNote}" Style="{StaticResource SettingDesc}"/>
+
                         <Border Style="{StaticResource SectionHeaderPanel}">
                             <TextBlock Text="{loc:Loc System_NotificationAccessHeader}" Style="{StaticResource SectionHeader}"
                                        ToolTip="{loc:Loc System_OpenWindowsNotificationAccessPage}"/>
