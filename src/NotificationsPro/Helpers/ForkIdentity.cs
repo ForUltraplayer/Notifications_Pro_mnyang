@@ -34,8 +34,28 @@ public static class ForkIdentity
     /// <summary>Event a second launch signals so the running instance opens its settings window.</summary>
     public const string ShowSettingsEventName = @"Local\NotificationsProKR-Mnyang.ShowSettings";
 
-    /// <summary>Reserved Task Scheduler logon task name (registration is implemented later, P4).</summary>
+    /// <summary>Task Scheduler logon task name (registered from the System tab, P4).</summary>
     public const string LogonTaskName = "NotificationsProKR-Mnyang-Logon";
+
+    /// <summary>Argument the logon task passes so the app starts without showing the settings window (P4).</summary>
+    public const string StartMinimizedArgument = "--start-minimized";
+
+    /// <summary>
+    /// Local operational metadata (not a setting, never in profiles/exports): marks a running primary
+    /// instance so the next start can tell that the previous run did not end normally (design §9.2).
+    /// </summary>
+    public const string RunMarkerFileName = "run-state.json";
+
+    private const string CliPipeNamePrefix = "NotificationsProKR-Mnyang.Cli.";
+
+    /// <summary>
+    /// Named pipe a second launch uses to forward its CLI arguments to the primary instance. Pipes are
+    /// machine-wide, so the Windows session id keeps it per session like the Local\ mutex (P4).
+    /// </summary>
+    public static string GetCliPipeName(int sessionId) => CliPipeNamePrefix + sessionId.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Path of <see cref="RunMarkerFileName"/> under <see cref="AppDataRoot"/>.</summary>
+    public static string RunMarkerPath => Path.Combine(AppDataRoot, RunMarkerFileName);
 
     /// <summary>
     /// App names treated as "this app" by the self-notification filter: both the original

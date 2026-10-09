@@ -98,6 +98,7 @@ public class LocalizationResourceTests
             ForkIdentity.ShowSettingsEventName,
             ForkIdentity.LogonTaskName,
             "--pause", "--resume", "--theme", "--send-test", "--hide", "--show",
+            ForkIdentity.StartMinimizedArgument, "--quit", ForkIdentity.RunMarkerFileName, "ms-settings:",
             "%AppData%", "HKEY_", @"C:\",
         };
 

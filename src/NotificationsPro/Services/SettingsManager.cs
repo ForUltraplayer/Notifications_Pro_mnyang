@@ -159,7 +159,7 @@ public class SettingsManager
 
     /// <summary>
     /// Applies a whole-settings snapshot coming from a profile, an imported file, or undo/redo.
-    /// App-local values (language, external sound folders, manual mute confirmations, restart intent)
+    /// App-local values (language, external sound folders, manual mute confirmations, restart intent, tray start)
     /// keep their current values, and pre-v6 snapshots get their legacy sounds converted to rules.
     /// </summary>
     public void ApplySnapshot(AppSettings snapshot)
@@ -247,7 +247,7 @@ public class SettingsManager
     public void ResetToDefaults()
     {
         // KR-Mnyang fork (P3): "reset all" keeps this PC's local-only values (UI language, external
-        // sound folders, manual mute confirmations, restart intent); see LocalOnlySettingsHelper.
+        // sound folders, manual mute confirmations, restart intent, tray start); see LocalOnlySettingsHelper.
         var defaults = new AppSettings();
         LocalOnlySettingsHelper.CopyLocalOnly(Settings, defaults);
         Settings = defaults;

@@ -47,7 +47,7 @@ public class SettingsSchemaV6Tests : IDisposable
         Assert.False(manager.Settings.SoundEnabled);
         Assert.Empty(manager.Settings.DefaultSoundRule.Files);
         Assert.Empty(manager.Settings.AppSoundRules);
-        Assert.False(manager.Settings.StartMinimizedToTray);
+        Assert.True(manager.Settings.StartMinimizedToTray); // K12: tray start like the original app (P4)
         Assert.False(manager.Settings.RestartOnCrash);
         Assert.Equal(4, manager.Settings.PlaybackPolicy.MinIntervalPerAppSeconds);
         Assert.Equal(5, manager.Settings.PlaybackPolicy.MaxQueued);
@@ -79,6 +79,9 @@ public class SettingsSchemaV6Tests : IDisposable
         var s = manager.Settings;
         Assert.Equal(AudioDispatchMode.OverlayAccepted, s.AudioDispatchMode);
         Assert.Equal(6, s.SettingsSchemaVersion);
+        // The original app always started in the tray; migrated settings keep that (P4, K12).
+        Assert.True(s.StartMinimizedToTray);
+        Assert.Contains("\"StartMinimizedToTray\": true", File.ReadAllText(SettingsPath));
 
         Assert.True(s.DefaultSoundRule.Enabled);
         Assert.Equal(SoundSelectionMode.Single, s.DefaultSoundRule.Mode);
@@ -162,6 +165,17 @@ public class SettingsSchemaV6Tests : IDisposable
         Assert.Equal(2, s.DefaultSoundRule.Files.Count);
         Assert.Equal(SoundSelectionMode.Sequential, s.AppSoundRules["openai.codex_2p2nqsd0c76g0!app"].Mode);
         Assert.True(s.AppSoundRules["discord"].ExplicitSilence);
+        Assert.True(s.StartMinimizedToTray); // key absent → model default (tray start)
+    }
+
+    [Fact]
+    public void V6File_ExplicitStartMinimizedFalse_IsKept()
+    {
+        var manager = LoadFrom("""
+            { "SettingsSchemaVersion": 6, "StartMinimizedToTray": false }
+            """);
+
+        Assert.False(manager.Settings.StartMinimizedToTray);
     }
 
     [Fact]
@@ -329,7 +343,7 @@ public class SettingsSchemaV6Tests : IDisposable
         var updated = manager.Settings.Clone();
         updated.UiLanguage = "en-US";
         updated.AudioDispatchMode = AudioDispatchMode.OverlayAccepted;
-        updated.StartMinimizedToTray = true;
+        updated.StartMinimizedToTray = false; // non-default value must survive the round trip
         updated.RestartOnCrash = true;
         updated.PlaybackPolicy.MinIntervalPerAppSeconds = 0;
         updated.PlaybackPolicy.OverflowBehavior = PlaybackOverflowBehavior.Skip;
@@ -347,7 +361,7 @@ public class SettingsSchemaV6Tests : IDisposable
         var s = reloaded.Settings;
         Assert.Equal("en-US", s.UiLanguage);
         Assert.Equal(AudioDispatchMode.OverlayAccepted, s.AudioDispatchMode);
-        Assert.True(s.StartMinimizedToTray);
+        Assert.False(s.StartMinimizedToTray);
         Assert.True(s.RestartOnCrash);
         Assert.Equal(0, s.PlaybackPolicy.MinIntervalPerAppSeconds);
         Assert.Equal(PlaybackOverflowBehavior.Skip, s.PlaybackPolicy.OverflowBehavior);

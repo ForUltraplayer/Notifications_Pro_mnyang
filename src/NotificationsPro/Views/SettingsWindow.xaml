@@ -2316,10 +2316,46 @@
                                                         <TextBlock Style="{StaticResource SettingDesc}" Margin="0,8,0,0">
                                                             <Run Text="{loc:Loc Apps_ReceivedVia}"/><Run Text="{Binding ReceivePathText, Mode=OneWay}"/>
                                                         </TextBlock>
-                                                        <TextBlock Style="{StaticResource SettingDesc}" Margin="0,2,0,0"
-                                                                   ToolTip="{loc:Loc Apps_WhetherAppSOwnWindows}">
-                                                            <Run Text="{loc:Loc Apps_OriginalSoundHandling}"/><Run Text="{Binding OriginalSoundStatusText, Mode=OneWay}"/>
-                                                        </TextBlock>
+                                                        <!-- KR-Mnyang fork (P4): original sound handling. Manual mute guidance by app type and
+                                                             the user's own confirmation; the app never reads or changes the Windows/app setting. -->
+                                                        <Border Margin="0,6,0,0" Padding="8,6" CornerRadius="4"
+                                                                BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}">
+                                                            <StackPanel>
+                                                                <TextBlock Style="{StaticResource SettingDesc}" TextWrapping="Wrap"
+                                                                           AutomationProperties.AutomationId="OriginalSoundStatusText"
+                                                                           AutomationProperties.Name="{loc:LocFormat ManualMute_StatusLine, Path=OriginalSoundStatusText}"
+                                                                           ToolTip="{loc:Loc Apps_WhetherAppSOwnWindows}">
+                                                                    <Run Text="{loc:Loc Apps_OriginalSoundHandling}"/><Run Text="{Binding OriginalSoundStatusText, Mode=OneWay}"/>
+                                                                </TextBlock>
+                                                                <TextBlock Text="{Binding ManualMuteGuidanceText}" Style="{StaticResource SettingDesc}"
+                                                                           TextWrapping="Wrap" Margin="0,4,0,0"
+                                                                           AutomationProperties.AutomationId="ManualMuteGuidanceText"/>
+                                                                <TextBlock Text="{loc:Loc ManualMute_NotVerifiedNote}" Style="{StaticResource SettingDesc}"
+                                                                           TextWrapping="Wrap" Margin="0,4,0,0"
+                                                                           Foreground="{DynamicResource TextMutedBrush}"/>
+                                                                <WrapPanel Margin="0,6,0,0">
+                                                                    <Button Content="{loc:Loc ManualMute_OpenWindowsSettings}" Style="{StaticResource SecondaryButton}"
+                                                                            Margin="0,0,8,4"
+                                                                            Command="{Binding OpenWindowsNotificationSettingsCommand}"
+                                                                            Visibility="{Binding ShowWindowsNotificationSettingsButton, Converter={StaticResource BoolToVis}}"
+                                                                            AutomationProperties.AutomationId="ManualMuteOpenSettingsButton"
+                                                                            ToolTip="{loc:Loc ManualMute_OpenWindowsSettingsTip}"/>
+                                                                    <Button Content="{loc:Loc ManualMute_MarkConfirmed}" Style="{StaticResource SecondaryButton}"
+                                                                            Margin="0,0,8,4"
+                                                                            Command="{Binding ConfirmManualMuteCommand}"
+                                                                            Visibility="{Binding CanConfirmManualMute, Converter={StaticResource BoolToVis}}"
+                                                                            AutomationProperties.AutomationId="ManualMuteConfirmButton"
+                                                                            AutomationProperties.Name="{loc:LocFormat ManualMute_MarkConfirmedForApp, Path=AppName}"
+                                                                            ToolTip="{loc:Loc ManualMute_MarkConfirmedTip}"/>
+                                                                    <Button Content="{loc:Loc ManualMute_MarkRecheck}" Style="{StaticResource SecondaryButton}"
+                                                                            Margin="0,0,8,4"
+                                                                            Command="{Binding RequireManualMuteRecheckCommand}"
+                                                                            Visibility="{Binding CanRequireManualMuteRecheck, Converter={StaticResource BoolToVis}}"
+                                                                            AutomationProperties.AutomationId="ManualMuteRecheckButton"
+                                                                            AutomationProperties.Name="{loc:LocFormat ManualMute_MarkRecheckForApp, Path=AppName}"/>
+                                                                </WrapPanel>
+                                                            </StackPanel>
+                                                        </Border>
                                                         <TextBlock Text="{Binding LegacyInfoText}" Style="{StaticResource SettingDesc}" Margin="0,2,0,0"
                                                                    Visibility="{Binding HasLegacyInfo, Converter={StaticResource BoolToVis}}"/>
                                                     </StackPanel>
@@ -3645,12 +3681,76 @@
                             <TextBlock Text="{loc:Loc System_StartupHeader}" Style="{StaticResource SectionHeader}"/>
                         </Border>
 
-                        <DockPanel Margin="0,0,0,8">
+                        <!-- Packaged (MSIX) runs keep the original StartupTask toggle. -->
+                        <DockPanel Margin="0,0,0,8"
+                                   Visibility="{Binding UsesPackagedStartupTask, Converter={StaticResource BoolToVis}}">
                             <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
                                           IsChecked="{Binding StartWithWindows}"
                                           ToolTip="{loc:Loc System_AutomaticallyStartNotificationsProSign}"/>
                             <TextBlock Text="{loc:Loc System_StartWithWindows}" Style="{StaticResource SettingLabel}" ToolTip="{loc:Loc System_AutomaticallyLaunchNotificationsProSign}"/>
                         </DockPanel>
+
+                        <!-- KR-Mnyang fork (P4): unpackaged runs use a Task Scheduler logon task. Its OS state is
+                             shown as is (registered / registered but disabled / not registered / blocked / check failed). -->
+                        <StackPanel Visibility="{Binding UsesLogonTask, Converter={StaticResource BoolToVis}}">
+                            <DockPanel Margin="0,0,0,4">
+                                <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                              IsChecked="{Binding LogonTaskEnabled}"
+                                              AutomationProperties.AutomationId="LogonTaskToggle"
+                                              AutomationProperties.Name="{loc:Loc System_LogonTask}"
+                                              ToolTip="{loc:Loc System_LogonTaskTip}"/>
+                                <TextBlock Text="{loc:Loc System_LogonTask}" Style="{StaticResource SettingLabel}"
+                                           ToolTip="{loc:Loc System_LogonTaskTip}"/>
+                            </DockPanel>
+                            <TextBlock Text="{Binding LogonTaskStatusText}" Style="{StaticResource SettingDesc}"
+                                       TextWrapping="Wrap"
+                                       AutomationProperties.AutomationId="LogonTaskStatusText"/>
+                            <WrapPanel Margin="0,4,0,8">
+                                <Button Content="{loc:Loc System_LogonTaskRefresh}" Style="{StaticResource SecondaryButton}"
+                                        Margin="0,0,8,8"
+                                        Command="{Binding RefreshLogonTaskStatusCommand}"
+                                        AutomationProperties.AutomationId="LogonTaskRefreshButton"/>
+                                <Button Content="{loc:Loc System_LogonTaskRemove}" Style="{StaticResource SecondaryButton}"
+                                        Margin="0,0,8,8"
+                                        Command="{Binding UnregisterLogonTaskCommand}"
+                                        Visibility="{Binding CanUnregisterLogonTask, Converter={StaticResource BoolToVis}}"
+                                        AutomationProperties.AutomationId="LogonTaskRemoveButton"
+                                        ToolTip="{loc:Loc System_LogonTaskRemoveTip}"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <DockPanel Margin="0,0,0,4">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding StartMinimizedToTray}"
+                                          AutomationProperties.AutomationId="StartMinimizedToTrayToggle"
+                                          AutomationProperties.Name="{loc:Loc System_StartMinimizedToTray}"
+                                          ToolTip="{loc:Loc System_StartMinimizedToTrayNote}"/>
+                            <TextBlock Text="{loc:Loc System_StartMinimizedToTray}" Style="{StaticResource SettingLabel}"
+                                       ToolTip="{loc:Loc System_StartMinimizedToTrayNote}"/>
+                        </DockPanel>
+                        <TextBlock Text="{loc:Loc System_StartMinimizedToTrayNote}" Style="{StaticResource SettingDesc}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <!-- KR-Mnyang fork (P4): restart on failure is not offered in this version (P0: the Task
+                             Scheduler RestartOnFailure did not restart the app). Shown disabled, stored value untouched. -->
+                        <DockPanel Margin="0,0,0,4">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="False" IsEnabled="False"
+                                          AutomationProperties.AutomationId="RestartOnCrashToggle"
+                                          AutomationProperties.Name="{loc:Loc System_RestartOnCrash}"
+                                          AutomationProperties.HelpText="{loc:Loc System_RestartOnCrashUnavailable}"/>
+                            <TextBlock Text="{loc:Loc System_RestartOnCrash}" Style="{StaticResource SettingLabel}"
+                                       Foreground="{DynamicResource TextMutedBrush}"/>
+                        </DockPanel>
+                        <TextBlock Text="{loc:Loc System_RestartOnCrashUnavailable}" Style="{StaticResource SettingDesc}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"
+                                   AutomationProperties.AutomationId="RestartOnCrashNote"/>
+
+                        <!-- KR-Mnyang fork (P4, R08): previous run status from the run marker. The cause is never guessed. -->
+                        <TextBlock Text="{loc:Loc System_PreviousRunLabel}" Style="{StaticResource SettingLabel}"/>
+                        <TextBlock Text="{Binding PreviousRunStatusText}" Style="{StaticResource SettingDesc}"
+                                   TextWrapping="Wrap" Margin="0,2,0,8"
+                                   AutomationProperties.AutomationId="PreviousRunStatusText"/>
 
                     </StackPanel>
                 </ScrollViewer>

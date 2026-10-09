@@ -735,7 +735,7 @@ public partial class SettingsViewModel
 
     private AppSoundRuleViewModel CreateAppSoundRule(string appName)
     {
-        var viewModel = new AppSoundRuleViewModel(appName, OnAppSoundRuleEdited);
+        var viewModel = new AppSoundRuleViewModel(appName, OnAppSoundRuleEdited, OnManualMuteChanged, OpenWindowsNotificationSettings);
         LoadAppSoundRule(viewModel, _settingsManager.Settings, preferredKey: null);
         return viewModel;
     }
@@ -817,14 +817,8 @@ public partial class SettingsViewModel
                 ? SoundUiText.ReceivePathAccessibility
                 : SoundUiText.ReceivePathNotSeen;
 
-        ManualMuteConfirmation? confirmation = null;
-        foreach (var candidate in new[] { key, appName }.Concat(appIds))
-        {
-            if (settings.ManualMuteConfirmations.TryGetValue(candidate, out confirmation))
-                break;
-        }
-
-        viewModel.OriginalSoundStatusText = SoundUiText.ManualMuteState(confirmation?.State);
+        // P4: original sound handling (manual mute guidance + the user's own confirmation).
+        LoadManualMuteState(viewModel, settings, key, appIds);
 
         var legacy = new List<string>();
         if (settings.PerAppSounds.TryGetValue(appName, out var legacySound) && !string.IsNullOrWhiteSpace(legacySound))

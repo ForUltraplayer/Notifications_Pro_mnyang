@@ -261,7 +261,7 @@ public class AppSettings
     public double? SettingsWindowTop { get; set; }
 
     // KR-Mnyang fork — settings schema v6 (P1-B). Playback/UI for these values arrives in P2–P4.
-    // App-local values (UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash)
+    // App-local values (UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash, StartMinimizedToTray)
     // are excluded from profiles/exports and preserved on profile/import/undo apply
     // (see LocalOnlySettingsHelper).
     public string? UiLanguage { get; set; } // "ko-KR", "en-US", or null = OS default
@@ -270,7 +270,12 @@ public class AppSettings
     public Dictionary<string, SoundRule> AppSoundRules { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> SoundLibraryFolders { get; set; } = new();
     public PlaybackPolicy PlaybackPolicy { get; set; } = new();
-    public bool StartMinimizedToTray { get; set; } = false;
+    // Tray start by default (K12): the original app never opened the settings window at start-up.
+    // Files without the key (new installs, v5 and older migrations) therefore start in the tray;
+    // the very first run (no settings file) still shows the settings window (design §5.3).
+    public bool StartMinimizedToTray { get; set; } = true;
+    // RestartOnCrash is not offered in this version (P0: Task Scheduler RestartOnFailure did not restart the app).
+    // The value is kept as stored (default false) and the System tab shows the option as unavailable.
     public bool RestartOnCrash { get; set; } = false;
     public Dictionary<string, ManualMuteConfirmation> ManualMuteConfirmations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 

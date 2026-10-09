@@ -1,6 +1,6 @@
 // @file LocalOnlySettingsTests.cs
 // @author: rudals252
-// @brief 이 PC 전용 설정(UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash)이 프로필·내보내기에서 빠지고, 프로필 적용·가져오기·테마 적용·undo/redo·일반 저장 후에도 현재 값이 보존되는지 고정한다.
+// @brief 이 PC 전용 설정(UiLanguage, SoundLibraryFolders, ManualMuteConfirmations, RestartOnCrash, StartMinimizedToTray)이 프로필·내보내기에서 빠지고, 프로필 적용·가져오기·테마 적용·undo/redo·일반 저장 후에도 현재 값이 보존되는지 고정한다.
 
 using System.IO;
 using System.Reflection;
@@ -33,6 +33,7 @@ public class LocalOnlySettingsTests : IDisposable
         updated.UiLanguage = language;
         updated.SoundLibraryFolders = new List<string> { libraryFolder };
         updated.RestartOnCrash = true;
+        updated.StartMinimizedToTray = false; // non-default (default is true)
         updated.ManualMuteConfirmations["Discord"] = new ManualMuteConfirmation { State = ManualMuteConfirmation.UserConfirmed };
         manager.Apply(updated);
     }
@@ -42,6 +43,7 @@ public class LocalOnlySettingsTests : IDisposable
         Assert.Equal(language, settings.UiLanguage);
         Assert.Equal(new[] { libraryFolder }, settings.SoundLibraryFolders);
         Assert.True(settings.RestartOnCrash);
+        Assert.False(settings.StartMinimizedToTray);
         Assert.Equal(ManualMuteConfirmation.UserConfirmed, settings.ManualMuteConfirmations["Discord"].State);
     }
 
@@ -53,6 +55,7 @@ public class LocalOnlySettingsTests : IDisposable
         Assert.DoesNotContain("SoundLibraryFolders", names);
         Assert.DoesNotContain("ManualMuteConfirmations", names);
         Assert.DoesNotContain("RestartOnCrash", names);
+        Assert.DoesNotContain("StartMinimizedToTray", names);
         // Portable fork values still travel.
         Assert.Contains("AudioDispatchMode", names);
         Assert.Contains("AppSoundRules", names);
@@ -212,7 +215,7 @@ public class LocalOnlySettingsTests : IDisposable
             SetLocalValues(manager, "ko-KR", library);
             var updated = manager.Settings.Clone();
             updated.AudioDispatchMode = AudioDispatchMode.OverlayAccepted;
-            updated.StartMinimizedToTray = true;
+            updated.StartMinimizedToTray = false;
             updated.PlaybackPolicy.MaxQueued = 2;
             updated.DefaultSoundRule = new SoundRule { Mode = SoundSelectionMode.Random, Files = { "sounds/a.wav" } };
             manager.Apply(updated);
@@ -227,7 +230,7 @@ public class LocalOnlySettingsTests : IDisposable
             Assert.Equal(23, s.FontSize);
             AssertLocalValues(s, "ko-KR", library);
             Assert.Equal(AudioDispatchMode.OverlayAccepted, s.AudioDispatchMode);
-            Assert.True(s.StartMinimizedToTray);
+            Assert.False(s.StartMinimizedToTray);
             Assert.Equal(2, s.PlaybackPolicy.MaxQueued);
             Assert.Equal(SoundSelectionMode.Random, s.DefaultSoundRule.Mode);
             Assert.Equal(6, s.SettingsSchemaVersion);

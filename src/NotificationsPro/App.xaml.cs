@@ -100,18 +100,29 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Single instance: a second launch asks the running instance to open its settings
-        // window and exits with code 0 before touching settings or the listener.
-        // Forwarding CLI arguments to the running instance is deferred (P4).
+        // Single instance: a second launch forwards its CLI commands to the running instance once
+        // (or, without commands, asks it to open its settings window) and exits before touching
+        // settings, the run marker or the listener. Exit code 0 unless forwarding failed (P4).
         _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
             ForkIdentity.SingleInstanceMutexName,
             ForkIdentity.ShowSettingsEventName);
         if (_singleInstanceGuard == null)
         {
-            SingleInstanceGuard.SignalExistingInstance(ForkIdentity.ShowSettingsEventName);
+            Shutdown(RunSecondaryInstance(e.Args));
+            return;
+        }
+
+        // --quit with no running instance: nothing to quit, so exit without starting.
+        if (CliArguments.Contains(e.Args, CliCommandKind.Quit))
+        {
             Shutdown(0);
             return;
         }
+
+        // KR-Mnyang fork (P4): primary instance only — receive forwarded CLI commands and
+        // record this run so the next start can report an unclean exit (design §9.2).
+        StartCliArgumentServer();
+        BeginRunMarker();
 
         // Global exception handlers — show error details instead of silently closing
         DispatcherUnhandledException += (_, args) =>
@@ -183,6 +194,7 @@ public partial class App : Application
         _settingsViewModel.ConfigureSettingsWindowBulkApplyState(SetSettingsWindowBulkApplyState);
         _settingsViewModel.ConfigurePlaybackDiagnostics(() => _playbackCoordinator?.GetDiagnostics().ToSummary());
         _settingsViewModel.ConfigureSoundPlayback(_soundLibrary, _playbackCoordinator);
+        ConfigureResidentSettingsState();
         UpdateSettingsDiagnostics();
 
         // Play notification sounds. AudioDispatchMode picks exactly one trigger:
@@ -233,6 +245,10 @@ public partial class App : Application
         _themeScheduleTimer.Start();
         OnThemeScheduleTimerTick(null, EventArgs.Empty);
 
+        // P4: the previous run did not end normally (run marker left behind). Shown before the
+        // first-run / schema balloons so those keep priority; the System tab keeps the status.
+        ShowPreviousRunBalloon();
+
         // Show first-run balloon tip only when there was no existing settings file.
         if (!_settingsManager.HadExistingSettingsFile)
         {
@@ -256,39 +272,53 @@ public partial class App : Application
                 WinForms.ToolTipIcon.Warning);
         }
 
+        // P4: settings window unless tray start was asked for (setting or --start-minimized).
+        // The first run always shows it. Overlay / OBS capture state is not changed here.
+        ShowSettingsAtStartupIfNeeded(e.Args);
+
         // Initialize notification listener — will prompt for permission on first run
         await _notificationListener.InitializeAsync();
 
-        // Process CLI arguments after full initialization
+        // Process CLI arguments after full initialization, then any forwarded while starting.
         ProcessCliArguments(e.Args);
+        CompleteCliStartup();
     }
 
-    private void ProcessCliArguments(string[] args)
+    /// <summary>
+    /// Runs parsed commands in order (same meaning as the original loop). Used for the start-up
+    /// arguments and for each command line forwarded by a second launch (applied once).
+    /// </summary>
+    private void ProcessCliArguments(IReadOnlyList<string> args)
     {
-        for (int i = 0; i < args.Length; i++)
+        foreach (var command in CliArguments.Parse(args))
         {
-            var arg = args[i].ToLowerInvariant();
-            switch (arg)
+            switch (command.Kind)
             {
-                case "--pause":
+                case CliCommandKind.Pause:
                     _queueManager?.Pause();
                     UpdateMenuLabels();
                     break;
-                case "--resume":
+                case CliCommandKind.Resume:
                     _queueManager?.Resume();
                     UpdateMenuLabels();
                     break;
-                case "--theme" when i + 1 < args.Length:
-                    ApplyThemeByName(args[++i]);
+                case CliCommandKind.Theme when command.Argument != null:
+                    ApplyThemeByName(command.Argument);
                     break;
-                case "--send-test":
+                case CliCommandKind.SendTest:
                     _settingsViewModel?.PreviewNotificationCommand.Execute(null);
                     break;
-                case "--hide":
+                case CliCommandKind.Hide:
                     HideOverlay();
                     break;
-                case "--show":
+                case CliCommandKind.Show:
                     ShowOverlay();
+                    break;
+                case CliCommandKind.Quit:
+                    QuitApp();
+                    return;
+                case CliCommandKind.StartMinimized:
+                    // Start-up only; forwarded to a running instance it changes nothing.
                     break;
             }
         }
@@ -330,7 +360,9 @@ public partial class App : Application
 
     private async void SyncStartupTaskState()
     {
-        if (_settingsManager == null) return;
+        // The MSIX StartupTask exists only with package identity. Unpackaged runs use the
+        // Task Scheduler logon task, whose OS state is never re-created from settings (P4).
+        if (_settingsManager == null || !HasPackageIdentity()) return;
         var shouldStart = _settingsManager.Settings.StartWithWindows;
         var isRegistered = await StartupHelper.IsStartupEnabledAsync();
 
@@ -1259,6 +1291,7 @@ public partial class App : Application
         _trayIcon?.Dispose();
         _overlayWindow?.Close();
         _settingsWindow?.Close();
+        EndRunMarker();
         Shutdown();
     }
 
@@ -1274,6 +1307,8 @@ public partial class App : Application
         _audioDispatchSubscription?.Dispose();
         DisposePlayback();
         _trayIcon?.Dispose();
+        // Clear the run marker before releasing the mutex so a new primary never sees this run's marker.
+        DisposeResidentState();
         _singleInstanceGuard?.Dispose();
         _singleInstanceGuard = null;
         base.OnExit(e);

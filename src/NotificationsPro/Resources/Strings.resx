@@ -1410,7 +1410,7 @@ GitHub: {6}</value>
     <comment>ViewModels/SettingsViewModel.cs</comment>
   </data>
   <data name="Apps_WhetherAppSOwnWindows" xml:space="preserve">
-    <value>Whether this app's own Windows notification sound was turned off. This is what you confirmed, not something the app checked. Changing it arrives in a later update.</value>
+    <value>Whether this app's own notification sound is off. "Confirmed by you" is what you reported, not something the app checked.</value>
     <comment>SettingsWindow.xaml:2285:ToolTip</comment>
   </data>
   <data name="Archive_CopiedToClipboard" xml:space="preserve">
@@ -3498,6 +3498,42 @@ Cancel = do not import.
     <value>Upgraded to WinRT listener (access granted on retry)</value>
     <comment>Services/NotificationListener.cs</comment>
   </data>
+  <data name="ManualMute_GuidanceDiscord" xml:space="preserve">
+    <value>1) Windows: Settings &gt; System &gt; Notifications &gt; Discord &gt; turn off "Play a sound when a notification arrives". 2) Discord: User Settings &gt; Notifications &gt; Sounds &gt; turn off "Message". Keep "Enable Desktop Notifications" on so notifications still arrive.</value>
+    <comment>Helpers/ManualMuteGuidance.cs</comment>
+  </data>
+  <data name="ManualMute_GuidanceKakaoTalk" xml:space="preserve">
+    <value>KakaoTalk did not use Windows notifications on the tested PC, so this app cannot receive its notifications or guide you to mute its own sound.</value>
+    <comment>Helpers/ManualMuteGuidance.cs</comment>
+  </data>
+  <data name="ManualMute_GuidanceUnknown" xml:space="preserve">
+    <value>The app type is not known yet because no Windows app ID was seen for it in this run. Check this tab again after one of its notifications arrives.</value>
+    <comment>Helpers/ManualMuteGuidance.cs</comment>
+  </data>
+  <data name="ManualMute_GuidanceWindowsToast" xml:space="preserve">
+    <value>Windows: Settings &gt; System &gt; Notifications &gt; select this app &gt; turn off "Play a sound when a notification arrives". Banners and the notification center stay on. Apps that share one app ID (for example ChatGPT and Codex) share this switch.</value>
+    <comment>Helpers/ManualMuteGuidance.cs</comment>
+  </data>
+  <data name="ManualMute_MarkConfirmed" xml:space="preserve">
+    <value>Mark as confirmed by me</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_MarkConfirmedForApp" xml:space="preserve">
+    <value>Mark the original sound of {0} as turned off by me</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_MarkConfirmedTip" xml:space="preserve">
+    <value>Records that you turned the original sound off yourself. The app does not check it.</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_MarkRecheck" xml:space="preserve">
+    <value>Needs checking again</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_MarkRecheckForApp" xml:space="preserve">
+    <value>Mark the original sound of {0} as needing checking again</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
   <data name="ManualMute_NotChecked" xml:space="preserve">
     <value>Not checked</value>
     <comment>Helpers/SoundUiText.cs</comment>
@@ -3506,9 +3542,37 @@ Cancel = do not import.
     <value>Guidance not available</value>
     <comment>Helpers/SoundUiText.cs</comment>
   </data>
+  <data name="ManualMute_NotVerifiedNote" xml:space="preserve">
+    <value>This app does not read or change these settings. "Confirmed by you" only records what you reported.</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_OpenSettingsFailed" xml:space="preserve">
+    <value>Could not open Windows notification settings.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="ManualMute_OpenSettingsFailedNextStep" xml:space="preserve">
+    <value>Open Settings &gt; System &gt; Notifications yourself.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="ManualMute_OpenWindowsSettings" xml:space="preserve">
+    <value>Open Windows notification settings</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_OpenWindowsSettingsTip" xml:space="preserve">
+    <value>Opens Settings &gt; System &gt; Notifications.</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
   <data name="ManualMute_SetupNeeded" xml:space="preserve">
     <value>Setup needed</value>
     <comment>Helpers/SoundUiText.cs</comment>
+  </data>
+  <data name="ManualMute_StatusLine" xml:space="preserve">
+    <value>Original sound handling: {0}</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="ManualMute_Title" xml:space="preserve">
+    <value>Original sound</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
   </data>
   <data name="ManualMute_UserConfirmed" xml:space="preserve">
     <value>Confirmed by you (not verified by the app)</value>
@@ -5286,6 +5350,50 @@ Its files are removed from every sound list. Nothing is deleted from disk.</valu
     <value>OS default follows the Windows display language: Korean when it is Korean, otherwise English.</value>
     <comment>Views/SettingsWindow.xaml (System tab), ViewModels/SettingsViewModel.Language.cs</comment>
   </data>
+  <data name="System_LogonTask" xml:space="preserve">
+    <value>Run at Windows sign-in</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_LogonTaskCheckFailed" xml:space="preserve">
+    <value>Check failed: the Task Scheduler state could not be read.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskNotRegistered" xml:space="preserve">
+    <value>Not registered: the app does not start automatically at sign-in.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskOtherExecutable" xml:space="preserve">
+    <value>The task starts a copy of the app in another location. Turn the option off and on again to register this copy.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskPolicyBlocked" xml:space="preserve">
+    <value>Blocked by policy: Windows did not allow registering or reading the task. Check your administrator's policy.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskRefresh" xml:space="preserve">
+    <value>Refresh status</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_LogonTaskRegistered" xml:space="preserve">
+    <value>Registered: starts in the tray when you sign in to Windows.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskRegisteredDisabled" xml:space="preserve">
+    <value>Registered (disabled): the task is turned off in Task Scheduler, so it does not run at sign-in. The app does not use any other auto-start method. Turning the option on enables the task again.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_LogonTaskRemove" xml:space="preserve">
+    <value>Remove task</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_LogonTaskRemoveTip" xml:space="preserve">
+    <value>Deletes the sign-in task. Do this before deleting the app folder.</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_LogonTaskTip" xml:space="preserve">
+    <value>Registers a Task Scheduler task for your account that starts this app in the tray when you sign in. Turn it off before deleting the app.</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
   <data name="System_MaxArchiveItems" xml:space="preserve">
     <value>Max archive items</value>
     <comment>SettingsWindow.xaml:3565:Text</comment>
@@ -5322,9 +5430,33 @@ Its files are removed from every sound list. Nothing is deleted from disk.</valu
     <value>Open Windows Settings → Privacy → Notifications for Notifications Pro.</value>
     <comment>SettingsWindow.xaml:3520:ToolTip</comment>
   </data>
+  <data name="System_PreviousRunClean" xml:space="preserve">
+    <value>No unfinished previous run was recorded.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_PreviousRunLabel" xml:space="preserve">
+    <value>Previous run</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_PreviousRunUnclean" xml:space="preserve">
+    <value>The previous run did not end normally. The cause (error, forced end, power loss, etc.) cannot be determined.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
+  <data name="System_PreviousRunUncleanDetail" xml:space="preserve">
+    <value>The previous run (started {0}, version {1}) did not end normally. The cause (error, forced end, power loss, etc.) cannot be determined.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
   <data name="System_RemovesWindowsToastPopupsAfter" xml:space="preserve">
     <value>Removes Windows toast popups after capture to prevent duplicates on screen. Also removes notifications from Windows notification center. Only works with WinRT capture mode (not accessibility fallback). Suppression stops immediately when the app closes.</value>
     <comment>SettingsWindow.xaml:3549:ToolTip</comment>
+  </data>
+  <data name="System_RestartOnCrash" xml:space="preserve">
+    <value>Restart after a failure</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_RestartOnCrashUnavailable" xml:space="preserve">
+    <value>Not available in this version. In testing, the Task Scheduler did not restart the app after it ended abnormally, so this option stays off. Instead, the next start tells you when the previous run did not end normally.</value>
+    <comment>SettingsWindow.xaml</comment>
   </data>
   <data name="System_RetryAccessCheck" xml:space="preserve">
     <value>Retry Access Check</value>
@@ -5346,9 +5478,21 @@ Its files are removed from every sound list. Nothing is deleted from disk.</valu
     <value>Run Capture Diagnostic</value>
     <comment>SettingsWindow.xaml:3525:Content</comment>
   </data>
+  <data name="System_RunMarkerWriteFailed" xml:space="preserve">
+    <value>This run could not be recorded ({0}), so an abnormal end of this run may not be reported at the next start.</value>
+    <comment>ViewModels/SettingsViewModel.Resident.cs</comment>
+  </data>
   <data name="System_SessionArchiveHeader" xml:space="preserve">
     <value>SESSION ARCHIVE</value>
     <comment>SettingsWindow.xaml:3553:Text</comment>
+  </data>
+  <data name="System_StartMinimizedToTray" xml:space="preserve">
+    <value>Start in the tray</value>
+    <comment>SettingsWindow.xaml</comment>
+  </data>
+  <data name="System_StartMinimizedToTrayNote" xml:space="preserve">
+    <value>Starts without opening this settings window. The overlay and capture window keep their saved visibility. The first start always opens this window, and starting at sign-in always uses the tray.</value>
+    <comment>SettingsWindow.xaml</comment>
   </data>
   <data name="System_StartupHeader" xml:space="preserve">
     <value>STARTUP</value>
@@ -5489,6 +5633,10 @@ Its files are removed from every sound list. Nothing is deleted from disk.</valu
   <data name="Tray_PreviewDefaultSound" xml:space="preserve">
     <value>Preview Default Sound</value>
     <comment>App.xaml.cs</comment>
+  </data>
+  <data name="Tray_PreviousRunUncleanBalloon" xml:space="preserve">
+    <value>The previous run did not end normally. See Settings &gt; System for details. The cause (error, forced end, power loss) cannot be determined.</value>
+    <comment>App.Resident.cs</comment>
   </data>
   <data name="Tray_QuickMuteApp" xml:space="preserve">
     <value>Quick Mute App</value>

@@ -212,7 +212,7 @@
     "MaxQueueWaitSeconds": 30,
     "OverflowBehavior": "Queue"
   },
-  "StartMinimizedToTray": false,
+  "StartMinimizedToTray": true,
   "RestartOnCrash": false,
   "ManualMuteConfirmations": {},
   "SoundDisplayNames": {}

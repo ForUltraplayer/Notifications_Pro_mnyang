@@ -1,9 +1,12 @@
 // @file AppSoundRuleViewModel.cs
 // @author: rudals252
-// @brief 앱 탭 한 앱의 소리 규칙 편집 상태(기본값 상속 / 이 앱 무음 / 이 앱 전용 목록, 규칙 키 AUMID 선택)와 읽기 전용 정보(수신 경로, 원래 소리 처리 상태, 기존 이름 규칙 표시, 요약).
+// @brief 앱 탭 한 앱의 소리 규칙 편집 상태(기본값 상속 / 이 앱 무음 / 이 앱 전용 목록, 규칙 키 AUMID 선택)와 정보(수신 경로, 기존 이름 규칙 표시, 요약), 원래 소리 처리 섹션(앱 유형별 수동 음소거 안내, 사용자 확인 완료 / 다시 확인 필요, P4).
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
 using System.Collections.ObjectModel;
+using System.Windows.Input;
+using NotificationsPro.Helpers;
+using NotificationsPro.Models;
 
 namespace NotificationsPro.ViewModels;
 
@@ -28,6 +31,10 @@ public sealed class AppSoundRuleViewModel : BaseViewModel
     };
 
     private readonly Action<AppSoundRuleViewModel, string?> _onChanged;
+    private readonly Action<AppSoundRuleViewModel, bool>? _onManualMuteChanged;
+    private OriginalSoundAppKind _originalSoundKind;
+    private string _manualMuteState = ManualMuteConfirmation.Unconfirmed;
+    private string _manualMuteGuidanceText = string.Empty;
     private AppSoundRuleChoice _choice;
     private string _ruleKey;
     private string _summaryText = string.Empty;
@@ -37,11 +44,25 @@ public sealed class AppSoundRuleViewModel : BaseViewModel
     private bool _loading;
 
     /// <param name="onChanged">Called after a user edit with (this, previous rule key when the key changed).</param>
-    public AppSoundRuleViewModel(string appName, Action<AppSoundRuleViewModel, string?> onChanged)
+    /// <param name="onManualMuteChanged">P4: called with true for "confirmed by me" and false for "needs checking again".</param>
+    /// <param name="openWindowsNotificationSettings">P4: opens Windows Settings, System, Notifications.</param>
+    public AppSoundRuleViewModel(
+        string appName,
+        Action<AppSoundRuleViewModel, string?> onChanged,
+        Action<AppSoundRuleViewModel, bool>? onManualMuteChanged = null,
+        Action? openWindowsNotificationSettings = null)
     {
         AppName = appName ?? string.Empty;
         _ruleKey = AppName;
         _onChanged = onChanged ?? throw new ArgumentNullException(nameof(onChanged));
+        _onManualMuteChanged = onManualMuteChanged;
+        ConfirmManualMuteCommand = new RelayCommand(
+            () => _onManualMuteChanged?.Invoke(this, true),
+            () => CanConfirmManualMute);
+        RequireManualMuteRecheckCommand = new RelayCommand(
+            () => _onManualMuteChanged?.Invoke(this, false),
+            () => CanRequireManualMuteRecheck);
+        OpenWindowsNotificationSettingsCommand = new RelayCommand(() => openWindowsNotificationSettings?.Invoke());
         Editor.Changed += () =>
         {
             if (!_loading)
@@ -110,11 +131,50 @@ public sealed class AppSoundRuleViewModel : BaseViewModel
         internal set => SetProperty(ref _receivePathText, value ?? string.Empty);
     }
 
-    /// <summary>Read-only ManualMuteConfirmations state (changing it arrives in P4).</summary>
+    /// <summary>
+    /// Original sound handling state text (unconfirmed / setup needed / confirmed by the user / no guidance).
+    /// "Confirmed" is what the user reported, never something the app verified (design §5.2).
+    /// </summary>
     public string OriginalSoundStatusText
     {
         get => _originalSoundStatusText;
         internal set => SetProperty(ref _originalSoundStatusText, value ?? string.Empty);
+    }
+
+    /// <summary>App type picked from this session's AUMIDs (P4).</summary>
+    public OriginalSoundAppKind OriginalSoundKind => _originalSoundKind;
+
+    /// <summary>Resolved <see cref="ManualMuteConfirmation"/> state value (P4).</summary>
+    public string ManualMuteState => _manualMuteState;
+
+    /// <summary>Where to turn the original sound off for this app type (P4).</summary>
+    public string ManualMuteGuidanceText => _manualMuteGuidanceText;
+
+    public bool CanConfirmManualMute => _onManualMuteChanged != null && ManualMuteGuidance.CanConfirm(_originalSoundKind, _manualMuteState);
+
+    public bool CanRequireManualMuteRecheck => _onManualMuteChanged != null && ManualMuteGuidance.CanRequireRecheck(_manualMuteState);
+
+    public bool ShowWindowsNotificationSettingsButton => ManualMuteGuidance.UsesWindowsToggle(_originalSoundKind);
+
+    public ICommand ConfirmManualMuteCommand { get; }
+
+    public ICommand RequireManualMuteRecheckCommand { get; }
+
+    public ICommand OpenWindowsNotificationSettingsCommand { get; }
+
+    /// <summary>Sets the original sound section from settings (no user edit is reported).</summary>
+    internal void LoadManualMute(OriginalSoundAppKind kind, string state, string statusText, string guidanceText)
+    {
+        _originalSoundKind = kind;
+        _manualMuteState = string.IsNullOrEmpty(state) ? ManualMuteConfirmation.Unconfirmed : state;
+        _manualMuteGuidanceText = guidanceText ?? string.Empty;
+        OriginalSoundStatusText = statusText;
+        OnPropertyChanged(nameof(OriginalSoundKind));
+        OnPropertyChanged(nameof(ManualMuteState));
+        OnPropertyChanged(nameof(ManualMuteGuidanceText));
+        OnPropertyChanged(nameof(CanConfirmManualMute));
+        OnPropertyChanged(nameof(CanRequireManualMuteRecheck));
+        OnPropertyChanged(nameof(ShowWindowsNotificationSettingsButton));
     }
 
     /// <summary>Legacy name-based values shown for information only (empty when none).</summary>
