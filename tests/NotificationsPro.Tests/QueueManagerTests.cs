@@ -10,7 +10,7 @@ public class QueueManagerTests
 {
     private static SettingsManager CreateSettings(double duration = 60, int maxVisible = 3)
     {
-        var sm = new SettingsManager();
+        var sm = TestAppDataIsolation.CreateSettingsManager();
         sm.Settings.NotificationDuration = duration;
         sm.Settings.MaxVisibleNotifications = maxVisible;
         sm.Settings.AnimationDurationMs = 0;

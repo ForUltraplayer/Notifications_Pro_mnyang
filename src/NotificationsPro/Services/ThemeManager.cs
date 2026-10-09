@@ -7,7 +7,7 @@ using NotificationsPro.Models;
 namespace NotificationsPro.Services;
 
 /// <summary>
-/// Manages custom user themes stored in %AppData%\NotificationsPro\themes\.
+/// Manages custom user themes stored in %AppData%\NotificationsProKR-Mnyang\themes\ (see ForkIdentity).
 /// Each theme is a separate JSON file. Never stores notification content.
 /// </summary>
 public class ThemeManager
@@ -21,9 +21,7 @@ public class ThemeManager
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public ThemeManager() : this(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "NotificationsPro", "themes"))
+    public ThemeManager() : this(Path.Combine(ForkIdentity.AppDataRoot, "themes"))
     { }
 
     public ThemeManager(string themesDir)

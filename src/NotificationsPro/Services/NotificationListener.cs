@@ -13,12 +13,15 @@ namespace NotificationsPro.Services;
 /// Captures Windows toast notifications and forwards app/title/body text to QueueManager.
 ///
 /// Strategy:
-///   1. Try the WinRT UserNotificationListener API (works for packaged/privileged apps)
-///   2. If that fails, fall back to accessibility mode: SetWinEventHook detects new
-///      toast windows, then UI Automation reads the text from them
+///   1. Try the WinRT UserNotificationListener API. Polling and the NotificationChanged
+///      subscription are independent: if only the subscription fails (unpackaged runs,
+///      0x80070490), WinRT stays active with 1-second polling.
+///   2. If WinRT access or querying fails, fall back to accessibility mode: SetWinEventHook
+///      detects new toast windows, then UI Automation reads the text from them
 ///
-/// Privacy: only notification IDs (system uint) or transient automation elements are
-/// accessed. No notification content is stored beyond QueueManager's in-memory queue.
+/// Privacy: only notification keys (app id, system uint id, creation time) or transient
+/// automation elements are kept. No notification content is stored beyond QueueManager's
+/// in-memory queue.
 /// </summary>
 public class NotificationListener
 {
@@ -29,9 +32,27 @@ public class NotificationListener
 
     // WinRT API
     private UserNotificationListener? _listener;
-    private readonly HashSet<uint> _seenIds = new();
+    private readonly WinRtPollTracker _pollTracker = new();
     private DispatcherTimer? _pollTimer;
     private bool _isPolling;
+    private bool _isStartingWinRt;
+    private bool _winRtSubscribed;
+    private int _winRtSession;
+    private int _pollTimeoutCount;
+    private WinRtListenerState _winRtState = WinRtListenerState.None;
+
+    // Subscription succeeded: events + backup poll. Subscription failed (unpackaged): poll only.
+    internal static readonly TimeSpan EventModeBackupPollInterval = TimeSpan.FromSeconds(2);
+    internal static readonly TimeSpan PollOnlyInterval = TimeSpan.FromSeconds(1);
+    internal static readonly TimeSpan PollTimeout = TimeSpan.FromSeconds(5);
+
+    private enum WinRtListenerState
+    {
+        None,
+        Events,
+        PollingOnly,
+        AccessRevoked
+    }
 
     // Accessibility fallback
     private IntPtr _winEventHook;
@@ -58,7 +79,18 @@ public class NotificationListener
     private int _capturedCount;
 
     public bool IsAccessGranted { get; private set; }
-    public string ListenerMode => _usingAccessibility ? "Accessibility" : (IsAccessGranted ? "WinRT" : "Initializing");
+    public string ListenerMode => _usingAccessibility
+        ? "Accessibility"
+        : _winRtState switch
+        {
+            WinRtListenerState.Events => "WinRT (events)",
+            WinRtListenerState.PollingOnly => $"WinRT (polling {PollOnlyInterval.TotalSeconds:0}s)",
+            WinRtListenerState.AccessRevoked => "WinRT (access revoked)",
+            _ => IsAccessGranted ? "WinRT" : "Initializing"
+        };
+
+    /// <summary>NotificationChanged registration result (technical status/HRESULT only).</summary>
+    public string SubscriptionState { get; private set; } = "Not attempted";
     public string StatusMessage { get; private set; } = "Not initialized";
     public event Action? StatusChanged;
 
@@ -144,7 +176,7 @@ public class NotificationListener
                 IsAccessGranted = true;
                 StatusMessage = "Access granted — starting WinRT listener";
                 StatusChanged?.Invoke();
-                StartWinRTListening();
+                await StartWinRTListeningAsync();
                 return true;
             }
 
@@ -161,10 +193,10 @@ public class NotificationListener
         // Fall back to accessibility-based capture
         StartAccessibilityCapture();
 
-        // Do NOT auto-retry WinRT — RequestAccessAsync can report "Allowed"
-        // for unpackaged desktop apps even though the WinRT listener never
-        // delivers notifications. Auto-upgrading would kill the working
-        // accessibility hook and replace it with a broken WinRT path.
+        // Do NOT auto-retry WinRT — auto-upgrading would kill the working
+        // accessibility hook. (Unpackaged runs with "Allowed" access no longer
+        // land here: they keep WinRT via 1s polling when only the
+        // NotificationChanged subscription fails.)
         // Users can manually retry via the tray menu if needed.
 
         return _usingAccessibility;
@@ -174,99 +206,266 @@ public class NotificationListener
     //  WinRT API approach
     // ========================
 
-    private void StartWinRTListening()
+    private async Task StartWinRTListeningAsync()
     {
-        if (_listener == null || _isRunning) return;
+        if (_listener == null || _isRunning || _isStartingWinRt) return;
+        _isStartingWinRt = true;
         _usingAccessibility = false;
-        _isRunning = true;
+        var session = ++_winRtSession;
 
-        _listener.NotificationChanged += OnNotificationChanged;
-        _ = SeedAndStartPollingAsync();
+        try
+        {
+            // 1. Seed the baseline first. Notifications that already exist at start/retry are
+            //    never forwarded retroactively.
+            int seededCount;
+            try
+            {
+                var existing = await GetToastSnapshotAsync();
+                if (session != _winRtSession) return;
+
+                _pollTracker.Seed(existing.Select(CreateTrackerKey));
+                seededCount = existing.Count;
+            }
+            catch (Exception ex)
+            {
+                if (session != _winRtSession) return;
+                SwitchToAccessibility($"WinRT seed failed ({DescribeException(ex)})");
+                return;
+            }
+
+            // 2. Subscribe separately. Unpackaged processes can query notifications but fail to
+            //    register NotificationChanged (COMException 0x80070490); that must not disable polling.
+            TrySubscribeToNotificationChanged();
+
+            _winRtState = _winRtSubscribed ? WinRtListenerState.Events : WinRtListenerState.PollingOnly;
+            _isRunning = true;
+            StartPollTimer(_winRtSubscribed ? EventModeBackupPollInterval : PollOnlyInterval);
+
+            StatusMessage = _winRtSubscribed
+                ? $"Seeded {seededCount} — events + {EventModeBackupPollInterval.TotalSeconds:0}s backup poll"
+                : $"Seeded {seededCount} — event subscription failed ({SubscriptionState}), polling every {PollOnlyInterval.TotalSeconds:0}s";
+            StatusChanged?.Invoke();
+        }
+        finally
+        {
+            _isStartingWinRt = false;
+        }
     }
 
-    private async Task SeedAndStartPollingAsync()
+    private void TrySubscribeToNotificationChanged()
     {
         if (_listener == null) return;
 
         try
         {
-            var notifications = await _listener.GetNotificationsAsync(NotificationKinds.Toast);
-            foreach (var notification in notifications)
-                _seenIds.Add(notification.Id);
-
-            StatusMessage = $"Seeded {notifications.Count} — polling started";
-            StatusChanged?.Invoke();
+            _listener.NotificationChanged += OnNotificationChanged;
+            _winRtSubscribed = true;
+            SubscriptionState = "Subscribed";
         }
         catch (Exception ex)
         {
-            SwitchToAccessibility($"WinRT seed failed ({ex.GetType().Name})");
-            return;
+            _winRtSubscribed = false;
+            SubscriptionState = $"Failed {DescribeException(ex)}";
+        }
+    }
+
+    private void UnsubscribeFromNotificationChanged()
+    {
+        if (_listener != null && _winRtSubscribed)
+        {
+            try { _listener.NotificationChanged -= OnNotificationChanged; } catch { }
         }
 
-        _pollTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
-        _pollTimer.Tick += async (_, _) => await PollForNewNotificationsAsync();
+        _winRtSubscribed = false;
+    }
+
+    private void StartPollTimer(TimeSpan interval)
+    {
+        StopPollTimer();
+        _pollTimer = new DispatcherTimer { Interval = interval };
+        _pollTimer.Tick += OnPollTimerTick;
         _pollTimer.Start();
+    }
+
+    private void StopPollTimer()
+    {
+        if (_pollTimer != null)
+        {
+            _pollTimer.Tick -= OnPollTimerTick;
+            _pollTimer.Stop();
+            _pollTimer = null;
+        }
+
+        _isPolling = false;
+    }
+
+    private async void OnPollTimerTick(object? sender, EventArgs e)
+    {
+        await PollForNewNotificationsAsync();
     }
 
     private void OnNotificationChanged(UserNotificationListener sender, UserNotificationChangedEventArgs args)
     {
         if (args.ChangeKind != UserNotificationChangedKind.Added) return;
-        _dispatcher.InvokeAsync(async () => await ProcessNewNotificationAsync(args.UserNotificationId));
+        var notificationId = args.UserNotificationId;
+        _dispatcher.InvokeAsync(async () => await ProcessNewNotificationAsync(notificationId));
     }
 
     private async Task PollForNewNotificationsAsync()
     {
         if (_listener == null || !_isRunning || _isPolling) return;
         _isPolling = true;
+        var session = _winRtSession;
 
         try
         {
-            _pollCount++;
-            var notifications = await _listener.GetNotificationsAsync(NotificationKinds.Toast);
-
-            foreach (var notification in notifications)
+            // Re-check permission every tick so a revoked permission is never mistaken for
+            // "no new notifications" (GetNotificationsAsync may just return an empty list).
+            var accessStatus = _listener.GetAccessStatus();
+            switch (WinRtPollTracker.EvaluateAccess(accessStatus, _winRtState == WinRtListenerState.AccessRevoked))
             {
-                if (!_seenIds.Contains(notification.Id))
+                case WinRtAccessDecision.EnterRevoked:
+                    EnterAccessRevokedState(accessStatus);
+                    return;
+                case WinRtAccessDecision.StayRevoked:
+                    return;
+                case WinRtAccessDecision.Resume:
+                    await ResumeAfterAccessRestoredAsync(session);
+                    return;
+            }
+
+            _pollCount++;
+            var snapshotToken = _pollTracker.BeginSnapshot();
+            IReadOnlyList<UserNotification> notifications;
+            try
+            {
+                notifications = await GetToastSnapshotAsync();
+            }
+            catch (TimeoutException)
+            {
+                // Skip this tick; the next tick polls again.
+                _pollTimeoutCount++;
+                StatusMessage = $"{ListenerMode} — poll #{_pollCount} timed out after {PollTimeout.TotalSeconds:0}s, skipped ({_pollTimeoutCount} timeouts)";
+                StatusChanged?.Invoke();
+                return;
+            }
+
+            if (session != _winRtSession || !_isRunning) return;
+
+            var keys = new List<WinRtNotificationKey>(notifications.Count);
+            foreach (var notification in notifications)
+                keys.Add(CreateTrackerKey(notification));
+
+            var newKeys = _pollTracker.ProcessSnapshot(snapshotToken, keys);
+            if (newKeys.Count > 0)
+            {
+                var newKeySet = newKeys.ToHashSet();
+                for (var i = 0; i < notifications.Count; i++)
                 {
-                    _seenIds.Add(notification.Id);
+                    if (!newKeySet.Remove(keys[i])) continue;
                     _capturedCount++;
-                    ExtractAndForwardWinRT(notification);
+                    ExtractAndForwardWinRT(notifications[i]);
                 }
             }
 
-            StatusMessage = $"WinRT — {_capturedCount} captured, {notifications.Count} in system (poll #{_pollCount})";
+            var subscriptionSuffix = _winRtSubscribed ? string.Empty : $"; events: {SubscriptionState}";
+            StatusMessage = $"{ListenerMode} — {_capturedCount} captured, {notifications.Count} in system (poll #{_pollCount}){subscriptionSuffix}";
             StatusChanged?.Invoke();
-
-            if (_seenIds.Count > 5000)
-                TrimSeenIds();
         }
         catch (Exception ex)
         {
-            SwitchToAccessibility($"WinRT poll failed ({ex.GetType().Name})");
+            if (session == _winRtSession)
+                SwitchToAccessibility($"WinRT poll failed ({DescribeException(ex)})");
         }
         finally
         {
-            _isPolling = false;
+            if (session == _winRtSession)
+                _isPolling = false;
         }
+    }
+
+    private void EnterAccessRevokedState(UserNotificationListenerAccessStatus accessStatus)
+    {
+        _winRtState = WinRtListenerState.AccessRevoked;
+        IsAccessGranted = false;
+        _pollTracker.Reset();
+        StatusMessage = $"WinRT access {accessStatus} — revoked or denied, polling stopped. Allow it in Windows Settings > Privacy > Notifications";
+        StatusChanged?.Invoke();
+    }
+
+    private async Task ResumeAfterAccessRestoredAsync(int session)
+    {
+        var existing = await GetToastSnapshotAsync();
+        if (session != _winRtSession || !_isRunning) return;
+
+        // Re-seed: notifications that arrived while access was revoked are not replayed.
+        _pollTracker.Seed(existing.Select(CreateTrackerKey));
+        IsAccessGranted = true;
+        _winRtState = _winRtSubscribed ? WinRtListenerState.Events : WinRtListenerState.PollingOnly;
+        StatusMessage = $"WinRT access allowed again — re-seeded {existing.Count}, polling resumed";
+        StatusChanged?.Invoke();
     }
 
     private async Task ProcessNewNotificationAsync(uint notificationId)
     {
-        if (_seenIds.Contains(notificationId)) return;
-        _seenIds.Add(notificationId);
-        if (_listener == null) return;
+        if (_listener == null || !_isRunning || _winRtState != WinRtListenerState.Events) return;
+        var session = _winRtSession;
 
         try
         {
-            var notifications = await _listener.GetNotificationsAsync(NotificationKinds.Toast);
+            var notifications = await GetToastSnapshotAsync();
+            if (session != _winRtSession || !_isRunning || _winRtState != WinRtListenerState.Events) return;
+
             var notification = notifications.FirstOrDefault(n => n.Id == notificationId);
-            if (notification != null)
-            {
-                _capturedCount++;
-                ExtractAndForwardWinRT(notification);
-            }
+            if (notification == null) return;
+
+            // Same key as the poll path, so an event and a poll report are handled once.
+            if (!_pollTracker.TryMarkSeen(CreateTrackerKey(notification))) return;
+
+            _capturedCount++;
+            ExtractAndForwardWinRT(notification);
         }
         catch { }
+    }
+
+    private async Task<IReadOnlyList<UserNotification>> GetToastSnapshotAsync()
+    {
+        var listener = _listener ?? throw new InvalidOperationException("WinRT listener not initialized");
+        var operation = listener.GetNotificationsAsync(NotificationKinds.Toast);
+        var task = operation.AsTask();
+        var completed = await Task.WhenAny(task, Task.Delay(PollTimeout));
+        if (completed != task)
+        {
+            try { operation.Cancel(); } catch { }
+            _ = task.ContinueWith(t => _ = t.Exception, TaskContinuationOptions.OnlyOnFaulted);
+            throw new TimeoutException("WinRT notification query timed out");
+        }
+
+        return await task;
+    }
+
+    private static WinRtNotificationKey CreateTrackerKey(UserNotification notification)
+    {
+        return WinRtPollTracker.CreateKey(TryReadAppUserModelId(notification), notification.Id, notification.CreationTime);
+    }
+
+    // Tray balloon tips and some Win32 senders throw E_NOTIMPL (0x80004001) from AppInfo,
+    // so each identity field is read separately and never aborts processing.
+    private static string? TryReadAppUserModelId(UserNotification notification)
+    {
+        try { return notification.AppInfo?.AppUserModelId; }
+        catch { return null; }
+    }
+
+    private static string? TryReadAppDisplayName(UserNotification notification)
+    {
+        try { return notification.AppInfo?.DisplayInfo?.DisplayName; }
+        catch { return null; }
+    }
+
+    private static string DescribeException(Exception ex)
+    {
+        return $"{ex.GetType().Name} 0x{ex.HResult:X8}";
     }
 
     private void ExtractAndForwardWinRT(UserNotification notification)
@@ -284,9 +483,12 @@ public class NotificationListener
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            var appName = NormalizeText(notification.AppInfo?.DisplayInfo?.DisplayName ?? string.Empty);
-            var fields = BuildNotificationFields(texts, appName, assumeLeadingAppNameWhenUnknown: false);
-            if (ShouldIgnoreCapturedNotification(fields.AppName, fields.Title, fields.Body))
+            var displayName = NormalizeText(TryReadAppDisplayName(notification) ?? string.Empty);
+            var fields = BuildNotificationFields(texts, displayName, assumeLeadingAppNameWhenUnknown: false);
+
+            // Unidentifiable senders (e.g. tray balloon tips) are forwarded as "Unknown" instead of being dropped.
+            var appName = string.IsNullOrWhiteSpace(fields.AppName) ? WinRtPollTracker.UnknownAppId : fields.AppName;
+            if (ShouldIgnoreCapturedNotification(appName, fields.Title, fields.Body))
                 return;
 
             // Suppress the Windows toast popup before forwarding to the overlay so the system
@@ -298,17 +500,9 @@ public class NotificationListener
                 try { _listener.RemoveNotification(notification.Id); } catch { }
             }
 
-            _queueManager.AddNotification(fields.AppName, fields.Title, fields.Body);
+            _queueManager.AddNotification(appName, fields.Title, fields.Body);
         }
         catch { }
-    }
-
-    private void TrimSeenIds()
-    {
-        if (_seenIds.Count <= 1000) return;
-        var kept = _seenIds.OrderByDescending(id => id).Take(1000).ToHashSet();
-        _seenIds.Clear();
-        foreach (var id in kept) _seenIds.Add(id);
     }
 
     // ========================
@@ -594,11 +788,20 @@ public class NotificationListener
     internal static bool ShouldIgnoreCapturedNotification(string appName, string title, string body)
     {
         var normalizedAppName = NormalizeText(appName);
-        if (string.IsNullOrWhiteSpace(normalizedAppName))
-            return false;
 
-        return string.Equals(normalizedAppName, "Notifications Pro", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(normalizedAppName, "NotificationsPro", StringComparison.OrdinalIgnoreCase);
+        // Both the original Notifications Pro names and this fork's names count as "self".
+        if (ForkIdentity.IsSelfAppName(normalizedAppName))
+            return true;
+
+        // Tray balloon tips (including this app's own first-run balloon) expose no AppInfo and
+        // arrive as unidentified, so match them by their title (the balloon title) instead.
+        if (string.IsNullOrWhiteSpace(normalizedAppName)
+            || string.Equals(normalizedAppName, WinRtPollTracker.UnknownAppId, StringComparison.OrdinalIgnoreCase))
+        {
+            return ForkIdentity.IsSelfAppName(NormalizeText(title));
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -785,14 +988,11 @@ public class NotificationListener
             return;
         }
 
-        _pollTimer?.Stop();
-        _pollTimer = null;
-        _isPolling = false;
-
-        if (_listener != null)
-            _listener.NotificationChanged -= OnNotificationChanged;
-
-        _seenIds.Clear();
+        _winRtSession++;
+        StopPollTimer();
+        UnsubscribeFromNotificationChanged();
+        _pollTracker.Reset();
+        _winRtState = WinRtListenerState.None;
         _isRunning = false;
         _usingAccessibility = false;
         IsAccessGranted = false;
@@ -835,10 +1035,10 @@ public class NotificationListener
                 // Start WinRT
                 _listener = listener;
                 IsAccessGranted = true;
-                _isRunning = false; // Reset so StartWinRTListening proceeds
+                _isRunning = false; // Reset so StartWinRTListeningAsync proceeds
                 StatusMessage = "Upgraded to WinRT listener (access granted on retry)";
                 StatusChanged?.Invoke();
-                StartWinRTListening();
+                await StartWinRTListeningAsync();
             }
         }
         catch
@@ -860,8 +1060,8 @@ public class NotificationListener
     public void Stop()
     {
         _isRunning = false;
-        _pollTimer?.Stop();
-        _pollTimer = null;
+        _winRtSession++;
+        StopPollTimer();
         _winrtRetryTimer?.Stop();
         _winrtRetryTimer = null;
 
@@ -872,8 +1072,7 @@ public class NotificationListener
             _accessibilityStatusTimer = null;
         }
 
-        if (_listener != null)
-            _listener.NotificationChanged -= OnNotificationChanged;
+        UnsubscribeFromNotificationChanged();
 
         if (_winEventHook != IntPtr.Zero)
         {
@@ -881,7 +1080,8 @@ public class NotificationListener
             _winEventHook = IntPtr.Zero;
         }
 
-        _seenIds.Clear();
+        _pollTracker.Reset();
+        _winRtState = WinRtListenerState.None;
         _shellHostCache.Clear();
         lock (_accessibilityGate)
         {

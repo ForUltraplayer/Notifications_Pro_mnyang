@@ -12,10 +12,6 @@ public class SettingsManager
     public const int CurrentSettingsSchemaVersion = 5;
     internal const long MaxSettingsFileBytes = 1_048_576;
 
-    private static readonly string DefaultSettingsDir = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "NotificationsPro");
-
     private readonly string _settingsDir;
     private readonly string _settingsPath;
 
@@ -30,7 +26,7 @@ public class SettingsManager
 
     public event Action? SettingsChanged;
 
-    public SettingsManager() : this(DefaultSettingsDir) { }
+    public SettingsManager() : this(ForkIdentity.AppDataRoot) { }
 
     /// <summary>
     /// Constructor accepting a custom settings directory (used for testing).

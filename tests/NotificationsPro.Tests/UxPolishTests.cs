@@ -111,7 +111,7 @@ public class UxPolishTests
     [Fact]
     public void QueueManager_EmptyInitially()
     {
-        var sm = new SettingsManager();
+        var sm = TestAppDataIsolation.CreateSettingsManager();
         var queue = new QueueManager(sm);
         Assert.Empty(queue.VisibleNotifications);
         Assert.Equal(0, queue.OverflowCount);
@@ -120,7 +120,7 @@ public class UxPolishTests
     [Fact]
     public void QueueManager_ClearAll_ReturnsToEmpty()
     {
-        var sm = new SettingsManager();
+        var sm = TestAppDataIsolation.CreateSettingsManager();
         sm.Settings.AnimationDurationMs = 0;
         var queue = new QueueManager(sm);
 

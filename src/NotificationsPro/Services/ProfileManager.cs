@@ -7,7 +7,7 @@ using NotificationsPro.Models;
 namespace NotificationsPro.Services;
 
 /// <summary>
-/// Manages named settings profiles stored in %AppData%\NotificationsPro\profiles\.
+/// Manages named settings profiles stored in %AppData%\NotificationsProKR-Mnyang\profiles\ (see ForkIdentity).
 /// Each profile is a complete AppSettings snapshot saved as a JSON file.
 /// Never stores notification content.
 /// </summary>
@@ -21,9 +21,7 @@ public class ProfileManager
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    public ProfileManager() : this(Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "NotificationsPro", "profiles"))
+    public ProfileManager() : this(Path.Combine(ForkIdentity.AppDataRoot, "profiles"))
     { }
 
     public ProfileManager(string profilesDir)

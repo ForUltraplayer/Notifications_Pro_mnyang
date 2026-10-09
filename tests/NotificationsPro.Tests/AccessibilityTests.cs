@@ -132,7 +132,7 @@ public class AccessibilityTests
     [Fact]
     public void PersistentMode_NotificationDoesNotExpire()
     {
-        var sm = new SettingsManager();
+        var sm = TestAppDataIsolation.CreateSettingsManager();
         sm.Settings.PersistentNotifications = true;
         sm.Settings.NotificationDuration = 0.1;
         sm.Settings.AnimationDurationMs = 0;

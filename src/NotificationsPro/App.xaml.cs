@@ -50,6 +50,7 @@ public partial class App : Application
     private System.ComponentModel.PropertyChangedEventHandler? _highContrastHandler;
     private bool _suppressSettingsWindowAutoRefresh;
     private bool _pendingSettingsWindowBulkRefresh;
+    private SingleInstanceGuard? _singleInstanceGuard;
 
     // Unpackaged desktop apps need an explicit AppUserModelID so the OS can
     // identify them in Privacy > Notifications and grant listener access.
@@ -95,6 +96,19 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Single instance: a second launch asks the running instance to open its settings
+        // window and exits with code 0 before touching settings or the listener.
+        // Forwarding CLI arguments to the running instance is deferred (P4).
+        _singleInstanceGuard = SingleInstanceGuard.TryAcquire(
+            ForkIdentity.SingleInstanceMutexName,
+            ForkIdentity.ShowSettingsEventName);
+        if (_singleInstanceGuard == null)
+        {
+            SingleInstanceGuard.SignalExistingInstance(ForkIdentity.ShowSettingsEventName);
+            Shutdown(0);
+            return;
+        }
+
         // Global exception handlers — show error details instead of silently closing
         DispatcherUnhandledException += (_, args) =>
         {
@@ -127,7 +141,7 @@ public partial class App : Application
         // Windows already provides package identity, and overriding it creates a
         // second notification identity that can break listener permissions.
         if (!HasPackageIdentity())
-            SetCurrentProcessExplicitAppUserModelID("NotificationsPro.App");
+            SetCurrentProcessExplicitAppUserModelID(ForkIdentity.UnpackagedAppUserModelId);
 
         _settingsManager = new SettingsManager();
         _settingsManager.Load();
@@ -160,6 +174,7 @@ public partial class App : Application
             .CollectionChanged += (_, _) => Dispatcher.InvokeAsync(UpdateTrayIcon);
 
         SetupTrayIcon();
+        _singleInstanceGuard.StartListening(() => Dispatcher.BeginInvoke(new Action(ShowSettings)));
 
         // Apply settings window theme preset/custom palette.
         Services.SettingsThemeService.ApplySettingsTheme(_settingsManager.Settings);
@@ -201,8 +216,8 @@ public partial class App : Application
             {
                 _trayIcon.ShowBalloonTip(
                     5000,
-                    "Notifications Pro",
-                    "Notifications Pro is running in the tray. Right-click for settings, quick theme switching, and focus mode.",
+                    ForkIdentity.ProductDisplayName,
+                    $"{ForkIdentity.ProductDisplayName} is running in the tray. Right-click for settings, quick theme switching, and focus mode.",
                     WinForms.ToolTipIcon.Info);
             }
         }
@@ -419,7 +434,7 @@ public partial class App : Application
         _trayIcon = new WinForms.NotifyIcon
         {
             Icon = icon,
-            Text = "Notifications Pro",
+            Text = ForkIdentity.ProductDisplayName,
             ContextMenuStrip = contextMenu,
             Visible = true
         };
@@ -837,7 +852,7 @@ public partial class App : Application
                 var pausedSuffix = isPaused ? " | Paused" : string.Empty;
                 var clickThroughSuffix = _settingsManager?.Settings.ClickThrough == true
                     ? " | Click-through" : string.Empty;
-                var tooltip = $"Notifications Pro — Listening via {mode}{pausedSuffix}{clickThroughSuffix}\n{_notificationListener.StatusMessage}";
+                var tooltip = $"{ForkIdentity.ProductDisplayName} — Listening via {mode}{pausedSuffix}{clickThroughSuffix}\n{_notificationListener.StatusMessage}";
                 if (tooltip.Length > 127) tooltip = tooltip[..127];
                 _trayIcon.Text = tooltip;
             }
@@ -1125,9 +1140,7 @@ public partial class App : Application
         var versionStr = GetCurrentVersionString();
         var packageIdentity = GetCurrentPackageIdentity();
         var installPath = GetCurrentInstallPath();
-        var listenerMode = _notificationListener != null
-            ? (_notificationListener.IsAccessGranted ? "WinRT" : "Accessibility")
-            : "Unknown";
+        var listenerMode = _notificationListener?.ListenerMode ?? "Unknown";
         var listenerStatus = _notificationListener?.StatusMessage ?? "No listener status available";
 
         System.Windows.MessageBox.Show(
@@ -1203,6 +1216,8 @@ public partial class App : Application
     {
         _spokenNotificationService?.Dispose();
         _trayIcon?.Dispose();
+        _singleInstanceGuard?.Dispose();
+        _singleInstanceGuard = null;
         base.OnExit(e);
     }
 }

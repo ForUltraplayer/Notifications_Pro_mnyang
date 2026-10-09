@@ -7,8 +7,11 @@
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
     <Version>1.1.10.37</Version>
-    <AssemblyTitle>Notifications Pro</AssemblyTitle>
-    <Product>Notifications Pro</Product>
+    <!-- Fork identity (see Helpers/ForkIdentity.cs). Project file and namespaces keep the upstream names. -->
+    <AssemblyName>NotificationsProKR-Mnyang</AssemblyName>
+    <RootNamespace>NotificationsPro</RootNamespace>
+    <AssemblyTitle>Notifications Pro KR-Mnyang</AssemblyTitle>
+    <Product>Notifications Pro KR-Mnyang</Product>
     <Description>Privacy-first Windows tray app that mirrors toast notifications into a customizable always-on-top overlay with smart filtering, optional narration, and per-app overrides</Description>
   </PropertyGroup>
   <ItemGroup>

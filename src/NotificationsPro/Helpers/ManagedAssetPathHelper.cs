@@ -8,13 +8,9 @@ public static class ManagedAssetPathHelper
     public const string SoundsFolderName = "sounds";
     public const string BackgroundsFolderName = "backgrounds";
 
-    private static readonly string AppDataRoot = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-        "NotificationsPro");
-
     public static string GetRoot(string folderName)
     {
-        return Path.Combine(AppDataRoot, folderName);
+        return Path.Combine(ForkIdentity.AppDataRoot, folderName);
     }
 
     public static string ResolveManagedPathOrEmpty(string? value, string folderName)
