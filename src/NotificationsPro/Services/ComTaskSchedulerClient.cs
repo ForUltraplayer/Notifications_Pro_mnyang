@@ -81,7 +81,7 @@ public sealed class ComTaskSchedulerClient : ITaskSchedulerClient
                 folder.DeleteTask(taskName, 0);
                 return true;
             }
-            catch (COMException ex) when (IsNotFound(ex.HResult))
+            catch (Exception ex) when (IsNotFound(ex))
             {
                 return false;
             }
@@ -131,10 +131,24 @@ public sealed class ComTaskSchedulerClient : ITaskSchedulerClient
         {
             return folder.GetTask(taskName);
         }
-        catch (COMException ex) when (IsNotFound(ex.HResult))
+        catch (Exception ex) when (IsNotFound(ex))
         {
             return null;
         }
+    }
+
+    // The runtime maps HRESULT 0x80070002/0x80070003 from COM to FileNotFoundException /
+    // DirectoryNotFoundException (not COMException), and late binding can wrap them, so a
+    // missing task must be recognised by HRESULT on the exception or its inner exception.
+    private static bool IsNotFound(Exception ex)
+    {
+        for (Exception? current = ex; current != null; current = current.InnerException)
+        {
+            if (IsNotFound(current.HResult))
+                return true;
+        }
+
+        return false;
     }
 
     private static T WithRootFolder<T>(Func<dynamic, T> action)
