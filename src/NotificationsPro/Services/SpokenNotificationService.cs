@@ -110,8 +110,65 @@ public sealed class SpokenNotificationService : IDisposable
         return voices;
     }
 
-    public static async Task PlayPreviewAsync(AppSettings settings)
+    /// <summary>Longest wait for the shared playback turn before a narration preview gives up.</summary>
+    internal static readonly TimeSpan PreviewTurnTimeout = TimeSpan.FromSeconds(60);
+
+    /// <summary>Test seam: replaces the real synthesis/playback of the narration preview.</summary>
+    internal static Func<AppSettings, CancellationToken, Task>? PreviewPlaybackOverrideForTesting { get; set; }
+
+    public static Task PlayPreviewAsync(AppSettings settings) => PlayPreviewAsync(settings, playbackGate: null);
+
+    /// <summary>
+    /// KR-Mnyang fork: with a gate, the voice preview waits for the shared playback turn (after any
+    /// notification WAV or preview that is playing or queued) so it never overlaps them, and "stop all"
+    /// stops it (immediately for Windows voices; a desktop SAPI voice finishes its short sentence).
+    /// </summary>
+    public static async Task PlayPreviewAsync(AppSettings settings, IPlaybackGate? playbackGate)
     {
+        if (playbackGate == null)
+        {
+            await PlayPreviewCoreAsync(settings, CancellationToken.None);
+            return;
+        }
+
+        var granted = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var revoked = new CancellationTokenSource();
+        var lease = playbackGate.RequestSpeech(
+            onGranted: () => granted.TrySetResult(true),
+            onRevoked: () =>
+            {
+                granted.TrySetResult(false);
+                try { revoked.Cancel(); } catch (ObjectDisposedException) { }
+            });
+        try
+        {
+            bool turn;
+            try
+            {
+                turn = await granted.Task.WaitAsync(PreviewTurnTimeout);
+            }
+            catch (TimeoutException)
+            {
+                return;
+            }
+
+            if (turn && !revoked.IsCancellationRequested)
+                await PlayPreviewCoreAsync(settings, revoked.Token);
+        }
+        finally
+        {
+            lease.Release();
+        }
+    }
+
+    private static async Task PlayPreviewCoreAsync(AppSettings settings, CancellationToken cancellationToken)
+    {
+        if (PreviewPlaybackOverrideForTesting != null)
+        {
+            await PreviewPlaybackOverrideForTesting(settings, cancellationToken);
+            return;
+        }
+
         var previewText = SpokenNotificationTextFormatter.BuildText(
             "Notifications Pro",
             LocalizationManager.Get("Accessibility_VoicePreviewSample"),
@@ -139,6 +196,11 @@ public sealed class SpokenNotificationService : IDisposable
         var playbackCompletion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         player.MediaEnded += (_, _) => playbackCompletion.TrySetResult(true);
         player.MediaFailed += (_, _) => playbackCompletion.TrySetResult(false);
+        using var stopRegistration = cancellationToken.Register(() =>
+        {
+            try { player.Pause(); } catch { }
+            playbackCompletion.TrySetResult(false);
+        });
 
         using var source = MediaSource.CreateFromStream(stream, stream.ContentType);
         player.Source = source;

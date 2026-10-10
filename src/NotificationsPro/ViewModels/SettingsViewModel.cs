@@ -2910,7 +2910,8 @@ public partial class SettingsViewModel : BaseViewModel
 
         try
         {
-            await SpokenNotificationService.PlayPreviewAsync(_settingsManager.Settings);
+            // Shares the playback turn with notification WAVs and sound previews (no overlap).
+            await SpokenNotificationService.PlayPreviewAsync(_settingsManager.Settings, _playbackCoordinator);
         }
         catch (Exception ex)
         {
