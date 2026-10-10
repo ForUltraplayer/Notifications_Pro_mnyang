@@ -2071,13 +2071,7 @@ public partial class SettingsViewModel : BaseViewModel
         if (!_isUndoRedoOperation)
         {
             _undoStack.Push(_settingsManager.Settings.Clone());
-            if (_undoStack.Count > MaxUndoHistory)
-            {
-                var items = _undoStack.ToArray();
-                _undoStack.Clear();
-                for (int i = 0; i < MaxUndoHistory; i++)
-                    _undoStack.Push(items[i]);
-            }
+            TrimHistory(_undoStack, MaxUndoHistory);
             _redoStack.Clear();
             UpdateUndoRedoState();
         }
@@ -2129,6 +2123,22 @@ public partial class SettingsViewModel : BaseViewModel
     public string SaveProblemTooltip { get => _saveProblemTooltip; private set => SetProperty(ref _saveProblemTooltip, value ?? string.Empty); }
 
     public bool ShowSaveProblemIndicator => !string.IsNullOrEmpty(_saveProblemText);
+
+    /// <summary>
+    /// Keeps the newest <paramref name="max"/> entries in their original order. Stack.ToArray() lists the
+    /// newest first, so the kept entries are pushed back oldest-first (the upstream loop pushed them
+    /// newest-first, which reversed the history once it grew past the limit).
+    /// </summary>
+    internal static void TrimHistory<T>(Stack<T> stack, int max)
+    {
+        if (stack.Count <= max)
+            return;
+
+        var newestFirst = stack.ToArray();
+        stack.Clear();
+        for (var i = max - 1; i >= 0; i--)
+            stack.Push(newestFirst[i]);
+    }
 
     private void ShowSavedFeedback()
     {
