@@ -161,6 +161,55 @@ public class PlaybackCoordinatorTests
         Assert.Equal(2, h.Diag.QueuedSounds);
     }
 
+    [Fact]
+    public void Cooldown_IsReleased_WhenTheSoundFailsBeforeItEverStarted()
+    {
+        var h = new Harness(s =>
+        {
+            s.PlaybackPolicy.MinIntervalPerAppSeconds = 4;
+            s.DefaultSoundRule = new SoundRule { Files = { "sounds/1.wav" } };
+        });
+        h.Engine.AutoStart = false;
+
+        Assert.Equal(PlaybackRequestOutcome.Started, h.Sound("A", "A.App"));
+        h.Engine.Current!.Fail(SoundEngineFailureKind.DeviceOrOther);   // never started, no other file to try
+        h.Posts.RunAll();
+        h.Clock.Advance(1);
+
+        // The failed sound was never heard, so the next notification of the same app is not skipped.
+        h.Engine.AutoStart = true;
+        Assert.Equal(PlaybackRequestOutcome.Started, h.Sound("A", "A.App"));
+        Assert.Equal(0, h.Diag.SkippedCooldown);
+    }
+
+    [Fact]
+    public void Cooldown_IsReleased_WhenAQueuedSoundIsCancelled()
+    {
+        var h = new Harness(s => s.PlaybackPolicy.MinIntervalPerAppSeconds = 4);
+
+        h.Sound("X", "X.App");                                   // playing
+        Assert.Equal(PlaybackRequestOutcome.Queued, h.Sound("A", "A.App"));
+        h.Coordinator.CancelPendingSounds();                     // A never played
+        h.Posts.RunAll();
+        h.Clock.Advance(1);
+
+        Assert.Equal(PlaybackRequestOutcome.Queued, h.Sound("A", "A.App"));
+        Assert.Equal(0, h.Diag.SkippedCooldown);
+    }
+
+    [Fact]
+    public void Cooldown_StillApplies_AfterASoundThatActuallyPlayed()
+    {
+        var h = new Harness(s => s.PlaybackPolicy.MinIntervalPerAppSeconds = 4);
+
+        h.Sound("A", "A.App");
+        h.Engine.Current!.Fail(SoundEngineFailureKind.DeviceOrOther);   // failed after it had started
+        h.Posts.RunAll();
+        h.Clock.Advance(1);
+
+        Assert.Equal(PlaybackRequestOutcome.SkippedCooldown, h.Sound("A", "A.App"));
+    }
+
     // ---- silence / pause / settings changes ----
 
     [Fact]

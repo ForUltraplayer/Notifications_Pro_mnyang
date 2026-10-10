@@ -164,16 +164,17 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
 
             if (busy)
             {
-                RecordAcceptedLocked(appKey, now);
+                RecordAcceptedLocked(job, appKey, now);
                 _queue.AddLast(job);
                 _lastEvent = "Queued";
                 NotifyStateChangedLocked();
                 return PlaybackRequestOutcome.Queued;
             }
 
+            RecordAcceptedLocked(job, appKey, now);
             var started = StartSoundLocked(job);
-            if (started)
-                RecordAcceptedLocked(appKey, now);
+            if (!started)
+                ReleaseCooldownLocked(job);
             NotifyStateChangedLocked();
             return started ? PlaybackRequestOutcome.Started : PlaybackRequestOutcome.SkippedNoUsableFile;
         }
@@ -492,11 +493,13 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                     {
                         _expired++;
                         _lastEvent = "Expired";
+                        ReleaseCooldownLocked(sound);
                         continue;
                     }
 
                     if (StartSoundLocked(sound))
                         return;
+                    ReleaseCooldownLocked(sound);
                     continue;
             }
         }
@@ -616,6 +619,9 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
                     NotifyStateChangedLocked();
                     return;
                 }
+
+                // No file of this request ever played: it must not hold back the app's next sound.
+                ReleaseCooldownLocked(sound);
             }
 
             TryStartNextLocked();
@@ -701,8 +707,9 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             var next = node.Next;
             switch (node.Value)
             {
-                case SoundJob:
+                case SoundJob cancelledSound:
                     _queue.Remove(node);
+                    ReleaseCooldownLocked(cancelledSound);
                     _cancelled++;
                     _lastEvent = "Cancelled";
                     break;
@@ -728,6 +735,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             if (node.Value is SoundJob sound && IsExpired(sound, now, policy))
             {
                 _queue.Remove(node);
+                ReleaseCooldownLocked(sound);
                 _expired++;
                 _lastEvent = "Expired";
             }
@@ -744,7 +752,7 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
 
     private int CountQueuedSoundsLocked() => _queue.Count(job => job is SoundJob);
 
-    private void RecordAcceptedLocked(string appKey, DateTime now)
+    private void RecordAcceptedLocked(SoundJob job, string appKey, DateTime now)
     {
         if (!_lastAcceptedByApp.ContainsKey(appKey) && _lastAcceptedByApp.Count >= MaxCooldownEntries)
         {
@@ -752,7 +760,31 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
             _lastAcceptedByApp.Remove(oldest);
         }
 
+        job.CooldownKey = appKey;
+        job.CooldownStamp = now;
+        job.PreviousCooldownStamp = _lastAcceptedByApp.TryGetValue(appKey, out var previous) ? previous : null;
         _lastAcceptedByApp[appKey] = now;
+    }
+
+    /// <summary>
+    /// The request never played (no usable file, engine failure before start, expired or cancelled):
+    /// undo its cooldown stamp so the app's next notification is not skipped because of a sound that
+    /// was never heard. A newer stamp from a later request is left alone.
+    /// </summary>
+    private void ReleaseCooldownLocked(SoundJob job)
+    {
+        if (job.Started || job.CooldownKey == null)
+            return;
+
+        if (_lastAcceptedByApp.TryGetValue(job.CooldownKey, out var stamp) && stamp == job.CooldownStamp)
+        {
+            if (job.PreviousCooldownStamp is { } previous)
+                _lastAcceptedByApp[job.CooldownKey] = previous;
+            else
+                _lastAcceptedByApp.Remove(job.CooldownKey);
+        }
+
+        job.CooldownKey = null;
     }
 
     private void IncrementAliveLocked()
@@ -832,6 +864,9 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
         public DateTime EnqueuedUtc { get; }
         public HashSet<string> Excluded { get; } = new(StringComparer.OrdinalIgnoreCase);
         public SoundSelection? Selection { get; set; }
+        public string? CooldownKey { get; set; }
+        public DateTime CooldownStamp { get; set; }
+        public DateTime? PreviousCooldownStamp { get; set; }
     }
 
     private sealed class PreviewJob : EngineJob
