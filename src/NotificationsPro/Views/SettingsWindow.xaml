@@ -3859,6 +3859,78 @@
             </TabItem>
 
             <!-- ═══ HELP TAB ═══ -->
+            <!-- ═══ LABS TAB (KR-Mnyang fork): experimental, intentionally unfinished-looking ═══ -->
+            <TabItem Style="{StaticResource SettingsTabItem}" Tag="Labs" AutomationProperties.Name="{loc:Loc Labs_LabsSettingsTab}">
+                <TabItem.Header>
+                    <StackPanel Orientation="Horizontal" Margin="4,0">
+                        <!-- flask -->
+                        <Path Width="16" Height="16" Margin="0,0,6,0" VerticalAlignment="Center" Stretch="Uniform"
+                              Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5" Fill="Transparent"
+                              Data="M9 3h6 M10 3v6.5L4.5 19a1.5 1.5 0 0 0 1.3 2.2h12.4a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3 M7 15h10"/>
+                        <TextBlock Text="{loc:Loc Common_Labs}"/>
+                        <Border Margin="6,0,0,0" Padding="4,0" CornerRadius="3" VerticalAlignment="Center"
+                                Background="{DynamicResource ErrorBrush}">
+                            <TextBlock Text="{loc:Loc Labs_BetaBadge}" FontSize="9" FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryButtonForegroundBrush}"/>
+                        </Border>
+                    </StackPanel>
+                </TabItem.Header>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,8,0">
+                    <StackPanel>
+
+                        <!-- Warning banner: dashed border + error colour so it reads as "not finished". -->
+                        <Border Margin="0,4,0,12" Padding="12,10" CornerRadius="6" BorderThickness="0">
+                            <Border.Background>
+                                <SolidColorBrush Color="{DynamicResource Error}" Opacity="0.12"/>
+                            </Border.Background>
+                            <Grid>
+                                <Rectangle RadiusX="6" RadiusY="6" Stroke="{DynamicResource ErrorBrush}" StrokeThickness="1.2"
+                                           StrokeDashArray="4 3" Margin="-12,-10" IsHitTestVisible="False"/>
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Labs_BannerTitle}" FontWeight="Bold"
+                                               Foreground="{DynamicResource ErrorBrush}" FontFamily="{StaticResource UIFont}"
+                                               AutomationProperties.AutomationId="LabsBannerTitle"/>
+                                    <TextBlock Text="{loc:Loc Labs_BannerBody}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" FontFamily="{StaticResource UIFont}"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Border Style="{StaticResource SectionHeaderPanel}">
+                            <TextBlock Text="{loc:Loc Labs_KakaoHeader}" Style="{StaticResource SectionHeader}"/>
+                        </Border>
+
+                        <DockPanel Margin="0,4,0,8">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding LabsKakaoPopupDetection}"
+                                          AutomationProperties.AutomationId="LabsKakaoPopupDetectionToggle"
+                                          AutomationProperties.Name="{loc:Loc Labs_KakaoToggle}"
+                                          ToolTip="{loc:Loc Labs_KakaoToggleTip}"/>
+                            <TextBlock Text="{loc:Loc Labs_KakaoToggle}" Style="{StaticResource SettingLabel}"
+                                       TextWrapping="Wrap" ToolTip="{loc:Loc Labs_KakaoToggleTip}"/>
+                        </DockPanel>
+
+                        <TextBlock Text="{loc:Loc Labs_KakaoHowItWorks}" Style="{StaticResource SettingDesc}"
+                                   TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <TextBlock Text="{loc:Loc Labs_KakaoLimitsHeader}" Style="{StaticResource SettingLabel}" Margin="0,4,0,2"/>
+                        <TextBlock Text="{loc:Loc Labs_KakaoLimits}" Style="{StaticResource SettingDesc}"
+                                   TextWrapping="Wrap" Margin="0,0,0,10"/>
+
+                        <Border Padding="10,8" CornerRadius="4" Background="{DynamicResource SurfaceLightBrush}" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="{loc:Loc Labs_KakaoStatusHeader}" Style="{StaticResource SettingLabel}"/>
+                                <TextBlock Text="{Binding LabsKakaoStatus}" TextWrapping="Wrap" Margin="0,2,0,0"
+                                           FontFamily="{StaticResource MonoFont}" FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           AutomationProperties.AutomationId="LabsKakaoStatus"
+                                           AutomationProperties.Name="{Binding LabsKakaoStatus}"/>
+                            </StackPanel>
+                        </Border>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
             <TabItem Style="{StaticResource SettingsTabItem}" Tag="Help" AutomationProperties.Name="{loc:Loc Help_HelpTab}">
                 <TabItem.Header>
                     <StackPanel Orientation="Horizontal" Margin="4,0">

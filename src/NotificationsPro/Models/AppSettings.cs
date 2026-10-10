@@ -284,6 +284,8 @@ public class AppSettings
     public bool DismissCardAfterOpeningApp { get; set; } = true;
     // Keeps the overlay where it is (no drag move / resize) while clicks still work. Off by default.
     public bool LockOverlayPosition { get; set; } = false;
+    // Labs (experimental, off by default): detect KakaoTalk PC's own message popup windows.
+    public bool LabsKakaoPopupDetection { get; set; } = false;
 
     /// <summary>
     /// Optional display names for sound files, keyed by the stored rule reference ("sounds/x.wav" or an
@@ -312,6 +314,7 @@ public class AppSettings
         target.OpenAppOnCardDoubleClick = OpenAppOnCardDoubleClick;
         target.DismissCardAfterOpeningApp = DismissCardAfterOpeningApp;
         target.LockOverlayPosition = LockOverlayPosition;
+        target.LabsKakaoPopupDetection = LabsKakaoPopupDetection;
         target.SoundDisplayNames = CloneSoundDisplayNames(SoundDisplayNames);
     }
 

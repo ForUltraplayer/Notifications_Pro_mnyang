@@ -1,0 +1,14 @@
+<!-- @file KakaoProbe.csproj -->
+<!-- @author: rudals252 -->
+<!-- @brief 카카오톡 PC 팝업 창 구조 조사용 읽기 전용 콘솔 프로브(창 클래스·위치·스타일·UIA 구조, 텍스트는 길이만). -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>KakaoProbe</RootNamespace>
+  </PropertyGroup>
+</Project>

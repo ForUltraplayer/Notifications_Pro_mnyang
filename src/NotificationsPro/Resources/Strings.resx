@@ -1955,6 +1955,9 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Layout</value>
     <comment>SettingsWindow.xaml:2349:Text</comment>
   </data>
+  <data name="Common_Labs" xml:space="preserve">
+    <value>Labs</value>
+  </data>
   <data name="Common_NoAppsSeenYetNotifications" xml:space="preserve">
     <value>No apps seen yet — notifications will populate this list</value>
     <comment>SettingsWindow.xaml:1742:Text</comment>
@@ -3104,6 +3107,64 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
   <data name="Layout_LayoutSettingsTab" xml:space="preserve">
     <value>Layout settings tab</value>
     <comment>SettingsWindow.xaml:2343:AutomationProperties.Name</comment>
+  </data>
+  <data name="Labs_KakaoCardTitle" xml:space="preserve">
+    <value>New KakaoTalk message</value>
+  </data>
+  <data name="Labs_KakaoNever" xml:space="preserve">
+    <value>none yet</value>
+  </data>
+  <data name="Labs_KakaoNotRunning" xml:space="preserve">
+    <value>not running</value>
+  </data>
+  <data name="Labs_KakaoRunning" xml:space="preserve">
+    <value>running</value>
+  </data>
+  <data name="Labs_KakaoStatusWatching" xml:space="preserve">
+    <value>Watching. KakaoTalk: {0}. Detected this session: {1}. Last: {2}</value>
+  </data>
+  <data name="Labs_KakaoStatusFailed" xml:space="preserve">
+    <value>Could not start: {0}</value>
+  </data>
+  <data name="Labs_KakaoStatusOff" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="Labs_KakaoStatusHeader" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Labs_KakaoLimits" xml:space="preserve">
+    <value>• Message text and sender cannot be read; the card only says a message arrived.
+• KakaoTalk's PC popup must be on. While a chat window is in front, KakaoTalk shows no popup, so nothing is detected.
+• Turn off KakaoTalk's own notification sound in KakaoTalk settings, or both sounds play.
+• Tuned for KakaoTalk 26.8. An update that changes the popup window can stop detection.
+• Other KakaoTalk popups (for example update notices) may be detected as messages.</value>
+  </data>
+  <data name="Labs_KakaoLimitsHeader" xml:space="preserve">
+    <value>Known limits</value>
+  </data>
+  <data name="Labs_KakaoHowItWorks" xml:space="preserve">
+    <value>KakaoTalk PC does not send Windows notifications; it draws its own popup. This feature watches for that popup window only (KakaoTalk files and settings are not touched) and passes it on as a notification from "카카오톡". Pause, quiet hours, app mute and sound rules still apply. Set a sound for "카카오톡" in the Apps tab after the first popup has been detected.</value>
+  </data>
+  <data name="Labs_KakaoToggleTip" xml:space="preserve">
+    <value>Treats each KakaoTalk PC popup as a notification from the app "카카오톡" so sound rules, the overlay card and "open app" work for it.</value>
+  </data>
+  <data name="Labs_KakaoToggle" xml:space="preserve">
+    <value>Detect KakaoTalk message popups</value>
+  </data>
+  <data name="Labs_KakaoHeader" xml:space="preserve">
+    <value>KAKAOTALK POPUP DETECTION (EXPERIMENTAL)</value>
+  </data>
+  <data name="Labs_BannerBody" xml:space="preserve">
+    <value>Features here are prototypes. They can miss events, misdetect, or stop working after a Windows or app update, and they may change or be removed. Everything here is off by default; turn a feature on only if you accept that.</value>
+  </data>
+  <data name="Labs_BannerTitle" xml:space="preserve">
+    <value>⚠ Experimental features — not finished</value>
+  </data>
+  <data name="Labs_BetaBadge" xml:space="preserve">
+    <value>BETA</value>
+  </data>
+  <data name="Labs_LabsSettingsTab" xml:space="preserve">
+    <value>Labs settings tab (experimental features)</value>
   </data>
   <data name="Layout_LowerBrightnessKeepsBackdropUnobtrusive" xml:space="preserve">
     <value>Lower brightness keeps the backdrop unobtrusive; higher brightness makes it more prominent.</value>

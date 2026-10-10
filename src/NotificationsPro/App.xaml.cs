@@ -205,6 +205,9 @@ public partial class App : Application
             _settingsManager,
             (appName, appId) => _playbackCoordinator?.EnqueueNotificationSound(appName, appId));
 
+        // KR-Mnyang fork (Labs): KakaoTalk popup detection, off by default.
+        InitializeLabs();
+
         // Update tray icon badge when notification count changes
         ((System.Collections.Specialized.INotifyCollectionChanged)_queueManager.VisibleNotifications)
             .CollectionChanged += (_, _) => Dispatcher.InvokeAsync(UpdateTrayIcon);
@@ -1286,6 +1289,7 @@ public partial class App : Application
         _audioDispatchSubscription?.Dispose();
         DisposePlayback();
         _hotkeyManager?.Dispose();
+        DisposeLabs();
         _notificationListener?.Stop();
         _settingsManager?.Save();
         _trayIcon?.Dispose();
