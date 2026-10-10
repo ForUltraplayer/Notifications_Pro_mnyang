@@ -60,6 +60,11 @@ public partial class OverlayWindow : Window
     [DllImport("user32.dll")]
     private static extern int SetWindowLong(IntPtr hwnd, int nIndex, int dwNewLong);
 
+    // KR-Mnyang fork: Windows places a new window at its default spot (and WPF raises LocationChanged/
+    // SizeChanged) before OnLoaded restores the saved position. Those early events used to overwrite the
+    // saved OverlayLeft/OverlayTop with the default spot, so the overlay "reset" on every start.
+    private bool _initialPlacementApplied;
+
     public OverlayWindow(OverlayViewModel viewModel, SettingsManager settingsManager)
     {
         InitializeComponent();
@@ -310,6 +315,8 @@ public partial class OverlayWindow : Window
             Left = settings.OverlayLeft.Value;
             Top = settings.OverlayTop.Value;
         }
+
+        _initialPlacementApplied = true;
 
         ApplyObsFixedWindowMode(settings);
         ApplyFullscreenOverlayMode(settings);
@@ -563,7 +570,7 @@ public partial class OverlayWindow : Window
 
     private void OnLocationChanged(object? sender, EventArgs e)
     {
-        if (_isInternalMove)
+        if (_isInternalMove || !_initialPlacementApplied)
             return;
 
         if (_settingsManager.Settings.FullscreenOverlayMode)
@@ -609,7 +616,7 @@ public partial class OverlayWindow : Window
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (_isInternalMove)
+        if (_isInternalMove || !_initialPlacementApplied)
             return;
 
         if (_settingsManager.Settings.FullscreenOverlayMode)
