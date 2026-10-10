@@ -4464,6 +4464,18 @@ Increase the visible limit to {2} for future notifications?</value>
     <value> Saved</value>
     <comment>SettingsWindow.xaml:4256:Text</comment>
   </data>
+  <data name="Shell_SaveReadOnlyTooltip" xml:space="preserve">
+    <value>settings.json was written by a newer version, so this version does not overwrite it. Changes apply only until the app closes.</value>
+  </data>
+  <data name="Shell_SaveReadOnly" xml:space="preserve">
+    <value> Not saved (read-only settings)</value>
+  </data>
+  <data name="Shell_SaveFailedTooltip" xml:space="preserve">
+    <value>Settings could not be written to disk. Your changes are active until the app closes. Check that the settings folder is writable.</value>
+  </data>
+  <data name="Shell_SaveFailed" xml:space="preserve">
+    <value> Save failed</value>
+  </data>
   <data name="Shell_SendTestNotification" xml:space="preserve">
     <value>Send Test Notification</value>
     <comment>SettingsWindow.xaml:4248:Content</comment>

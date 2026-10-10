@@ -4421,6 +4421,15 @@
                                Foreground="{DynamicResource AccentBrush}"
                                Visibility="{Binding ShowSavedIndicator, Converter={StaticResource BoolToVis}}"
                                FontWeight="SemiBold"/>
+                    <!-- KR-Mnyang fork: shown instead of "Saved" when the settings file could not be written. -->
+                    <TextBlock x:Name="SaveProblemIndicator" Text="{Binding SaveProblemText}"
+                               ToolTip="{Binding SaveProblemTooltip}"
+                               AutomationProperties.AutomationId="SaveProblemIndicator"
+                               AutomationProperties.HelpText="{Binding SaveProblemTooltip}"
+                               FontFamily="{StaticResource UIFont}" FontSize="11"
+                               Foreground="{DynamicResource ErrorBrush}"
+                               Visibility="{Binding ShowSaveProblemIndicator, Converter={StaticResource BoolToVis}}"
+                               FontWeight="SemiBold"/>
                 </StackPanel>
             </DockPanel>
         </Border>

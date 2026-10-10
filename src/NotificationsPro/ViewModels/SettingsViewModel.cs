@@ -2085,8 +2085,50 @@ public partial class SettingsViewModel : BaseViewModel
         var s = BuildCurrentSettingsSnapshot(previousSettings);
         _settingsManager.Apply(s);
         _overlayWidthDirty = false;
-        ShowSavedFeedback();
+        ShowSaveResultFeedback(_settingsManager.LastSaveStatus);
     }
+
+    /// <summary>
+    /// KR-Mnyang fork: "Saved" only when the file was actually written. A failed or skipped (newer-schema,
+    /// read-only) save shows a persistent warning instead, cleared by the next successful save.
+    /// </summary>
+    internal void ShowSaveResultFeedback(Services.SettingsSaveStatus status)
+    {
+        switch (status)
+        {
+            case Services.SettingsSaveStatus.Failed:
+                SetSaveProblem(LocalizationManager.Get("Shell_SaveFailed"), LocalizationManager.Get("Shell_SaveFailedTooltip"));
+                return;
+            case Services.SettingsSaveStatus.SkippedReadOnly:
+                SetSaveProblem(LocalizationManager.Get("Shell_SaveReadOnly"), LocalizationManager.Get("Shell_SaveReadOnlyTooltip"));
+                return;
+            default:
+                SetSaveProblem(string.Empty, string.Empty);
+                ShowSavedFeedback();
+                return;
+        }
+    }
+
+    private void SetSaveProblem(string text, string tooltip)
+    {
+        if (!string.IsNullOrEmpty(text))
+        {
+            _savedFeedbackTimer?.Stop();
+            ShowSavedIndicator = false;
+        }
+
+        SaveProblemTooltip = tooltip;
+        SaveProblemText = text;
+        OnPropertyChanged(nameof(ShowSaveProblemIndicator));
+    }
+
+    private string _saveProblemText = string.Empty;
+    public string SaveProblemText { get => _saveProblemText; private set => SetProperty(ref _saveProblemText, value ?? string.Empty); }
+
+    private string _saveProblemTooltip = string.Empty;
+    public string SaveProblemTooltip { get => _saveProblemTooltip; private set => SetProperty(ref _saveProblemTooltip, value ?? string.Empty); }
+
+    public bool ShowSaveProblemIndicator => !string.IsNullOrEmpty(_saveProblemText);
 
     private void ShowSavedFeedback()
     {
