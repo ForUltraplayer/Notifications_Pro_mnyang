@@ -351,13 +351,19 @@ public sealed class PlaybackCoordinator : IPlaybackGate, IDisposable
     }
 
     /// <summary>
-    /// Previews the first usable file of <paramref name="rule"/> in list order (settings "Preview" and the
-    /// tray "Preview default sound"). Like <see cref="Preview"/> it never touches rule history.
+    /// Previews what a notification would play (settings "Preview" and the tray "Preview default sound"):
+    /// Single mode uses only the first listed file, exactly like real playback, so a broken first file is
+    /// reported instead of being hidden by a later file; other modes preview the first usable file in
+    /// list order. Like <see cref="Preview"/> it never touches rule history.
     /// </summary>
     public PlaybackRequestOutcome PreviewRule(SoundRule? rule)
     {
         string? file = null;
-        foreach (var candidate in rule?.Files ?? new List<string>())
+        var files = rule?.Files ?? new List<string>();
+        var candidates = rule != null && rule.Mode == SoundSelectionMode.Single
+            ? files.Take(1)
+            : files;
+        foreach (var candidate in candidates)
         {
             if (!string.IsNullOrWhiteSpace(candidate) && _files.ResolvePlayablePath(candidate) != null)
             {

@@ -210,6 +210,39 @@ public class PlaybackCoordinatorTests
         Assert.Equal(PlaybackRequestOutcome.SkippedCooldown, h.Sound("A", "A.App"));
     }
 
+    [Fact]
+    public void PreviewRule_SingleMode_MatchesRealPlayback_WhenTheFirstFileIsUnusable()
+    {
+        var h = new Harness(s => s.DefaultSoundRule = new SoundRule
+        {
+            Mode = SoundSelectionMode.Single,
+            Files = { "sounds/missing.wav", "sounds/2.wav" },
+        });
+        h.Files.Unusable.Add("sounds/missing.wav");
+
+        // Real notification: Single uses only the first file, which is unusable -> no sound.
+        Assert.Equal(PlaybackRequestOutcome.SkippedNoUsableFile, h.Sound("A"));
+        // Preview must say the same instead of playing the second file.
+        Assert.Equal(PlaybackRequestOutcome.SkippedNoUsableFile, h.Coordinator.PreviewRule(h.Settings.Settings.DefaultSoundRule));
+        h.Posts.RunAll();
+        Assert.Empty(h.Engine.Plays);
+    }
+
+    [Fact]
+    public void PreviewRule_SequentialMode_StillSkipsToTheFirstUsableFile()
+    {
+        var h = new Harness(s => s.DefaultSoundRule = new SoundRule
+        {
+            Mode = SoundSelectionMode.Sequential,
+            Files = { "sounds/missing.wav", "sounds/2.wav" },
+        });
+        h.Files.Unusable.Add("sounds/missing.wav");
+
+        Assert.Equal(PlaybackRequestOutcome.Started, h.Coordinator.PreviewRule(h.Settings.Settings.DefaultSoundRule));
+        h.Posts.RunAll();
+        Assert.Equal("sounds/2.wav", h.PlayedFiles.Single());
+    }
+
     // ---- silence / pause / settings changes ----
 
     [Fact]
