@@ -86,7 +86,9 @@ public partial class App
 
     private void OnSessionEnding(object? sender, SessionEndingCancelEventArgs e)
     {
-        // Sign-out / shutdown: the process may be ended before OnExit completes, so clear first.
+        // Sign-out / shutdown: the process may be ended before OnExit completes. Save settings that
+        // are only held in memory (e.g. overlay position, visibility) and clear the run marker first.
+        try { _settingsManager?.Save(); } catch { }
         EndRunMarker();
     }
 

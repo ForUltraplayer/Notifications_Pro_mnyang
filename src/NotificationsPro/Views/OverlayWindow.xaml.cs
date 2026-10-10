@@ -39,6 +39,7 @@ public partial class OverlayWindow : Window
     private const int WM_NCLBUTTONDOWN = 0x00A1;
     private const int WM_NCLBUTTONUP = 0x00A2;
     private const int WM_NCLBUTTONDBLCLK = 0x00A3;
+    private const int WM_EXITSIZEMOVE = 0x0232;
     private const int WM_NCRBUTTONUP = 0x00A5;
     private const int WM_NCMOUSEMOVE = 0x00A0;
     private const int WM_MOUSEWHEEL = 0x020A;
@@ -172,6 +173,13 @@ public partial class OverlayWindow : Window
                     }
                 }
                 _ncMouseDownTracked = false;
+                break;
+
+            case WM_EXITSIZEMOVE:
+                // KR-Mnyang fork: a finished drag/resize only updated the in-memory position, which was
+                // lost on reboot/sign-out or a crash. Persist it once the move ends.
+                if (!_settingsManager.Settings.FullscreenOverlayMode)
+                    _settingsManager.Save();
                 break;
 
             case WM_NCRBUTTONUP:
