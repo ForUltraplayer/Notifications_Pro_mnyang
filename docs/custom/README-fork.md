@@ -4,7 +4,7 @@
 
 # Notifications Pro KR-Mnyang (포크)
 
-[Notifications Pro](https://github.com/lwytch/Notifications-Pro)(lwytch, GPL-3.0-or-later) `v1.1.10.37`을 기반으로 rudals252가 수정한 버전입니다. 사용자용 한국어 안내는 루트 [`README.md`](../../README.md)이고, 원본 영문 README는 [`README.upstream.md`](../../README.upstream.md)에 보존했습니다. upstream `CHANGELOG.md`·`docs/PLAN.md`·`docs/STATUS.md`는 cherry-pick 충돌을 줄이려고 그대로 두고, 포크 이력은 `docs/custom/`에 기록합니다. 저장소: `ForUltraplayer/Notifications_Pro_mnyang`(비공개), 원본은 `upstream` 리모트.
+[Notifications Pro](https://github.com/lwytch/Notifications-Pro)(lwytch, GPL-3.0-or-later) `v1.1.10.37`을 기반으로 rudals252가 수정한 버전입니다. 사용자용 한국어 안내는 루트 [`README.md`](../../README.md)이고, 원본 영문 README는 [`README.upstream.md`](../../README.upstream.md)에 보존했습니다. upstream `CHANGELOG.md`·`docs/PLAN.md`·`docs/STATUS.md`는 cherry-pick 충돌을 줄이려고 그대로 두고, 포크 이력은 `docs/custom/`에 기록합니다. 저장소: <https://github.com/ForUltraplayer/Notifications_Pro_mnyang>(공개), 원본은 `upstream` 리모트.
 
 ## 바꾼 것
 
