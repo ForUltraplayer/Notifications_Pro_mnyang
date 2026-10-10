@@ -85,8 +85,9 @@ public class HotkeyManager : IDisposable
         UnregisterHotKey(_hwnd, HOTKEY_DISMISS_ALL);
         UnregisterHotKey(_hwnd, HOTKEY_TOGGLE_DND);
 
+        // The HwndSource belongs to the overlay window (HwndSource.FromHwnd returns the window's own
+        // source). Only detach our hook; disposing it would destroy the overlay window.
         _hwndSource?.RemoveHook(WndProc);
-        _hwndSource?.Dispose();
         _hwndSource = null;
         _registered = false;
     }
