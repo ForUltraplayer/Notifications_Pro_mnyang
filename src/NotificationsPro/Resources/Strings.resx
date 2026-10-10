@@ -3015,6 +3015,12 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Click-Through Mode</value>
     <comment>SettingsWindow.xaml:2636:Text</comment>
   </data>
+  <data name="Layout_LockOverlayPositionTip" xml:space="preserve">
+    <value>Keeps the overlay where it is: dragging does not move it and the edges cannot be resized. Unlike click-through mode, clicking a card to dismiss it, double-clicking to open the app, right-click menus and scrolling still work.</value>
+  </data>
+  <data name="Layout_LockOverlayPosition" xml:space="preserve">
+    <value>Lock overlay position</value>
+  </data>
   <data name="Layout_DismissAfterOpeningAppTip" xml:space="preserve">
     <value>Removes the card from the overlay once its app was opened from it.</value>
   </data>

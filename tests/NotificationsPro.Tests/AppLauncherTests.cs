@@ -61,6 +61,7 @@ public class AppLauncherTests
     {
         Assert.False(new AppSettings().OpenAppOnCardDoubleClick);
         Assert.True(new AppSettings().DismissCardAfterOpeningApp);
+        Assert.False(new AppSettings().LockOverlayPosition);
 
         StaThreadTestHelper.Run(() =>
         {
@@ -68,17 +69,20 @@ public class AppLauncherTests
             var vm = new SettingsViewModel(manager, new QueueManager(manager), new ProfileManager(TestAppDataIsolation.CreateUniqueDirectory("profiles")));
             vm.OpenAppOnCardDoubleClick = true;
             vm.DismissCardAfterOpeningApp = false;
+            vm.LockOverlayPosition = true;
 
             vm.FontSize = 23;
             typeof(SettingsViewModel).GetMethod("SaveSettings", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(vm, null);
 
             Assert.True(manager.Settings.OpenAppOnCardDoubleClick);
+            Assert.True(manager.Settings.LockOverlayPosition);
             Assert.False(manager.Settings.DismissCardAfterOpeningApp);
 
             var reloaded = new SettingsManager(manager.SettingsDirectory);
             reloaded.Load();
             Assert.True(reloaded.Settings.OpenAppOnCardDoubleClick);
             Assert.False(reloaded.Settings.DismissCardAfterOpeningApp);
+            Assert.True(reloaded.Settings.LockOverlayPosition);
         });
     }
 }

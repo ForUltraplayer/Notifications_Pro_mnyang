@@ -2278,6 +2278,12 @@ Notifications Pro는 보관함을 RAM에만 두고 앱을 닫으면 지웁니다
   <data name="Layout_ClickThroughMode" xml:space="preserve">
     <value>클릭 통과 모드</value>
   </data>
+  <data name="Layout_LockOverlayPositionTip" xml:space="preserve">
+    <value>오버레이를 지금 위치에 고정합니다. 끌어도 움직이지 않고 가장자리로 크기를 바꿀 수 없습니다. 클릭 통과 모드와 달리 카드 클릭으로 닫기, 더블클릭으로 앱 열기, 우클릭 메뉴, 스크롤은 그대로 동작합니다.</value>
+  </data>
+  <data name="Layout_LockOverlayPosition" xml:space="preserve">
+    <value>오버레이 위치 고정</value>
+  </data>
   <data name="Layout_DismissAfterOpeningAppTip" xml:space="preserve">
     <value>카드에서 앱을 열면 그 카드를 오버레이에서 지웁니다.</value>
   </data>

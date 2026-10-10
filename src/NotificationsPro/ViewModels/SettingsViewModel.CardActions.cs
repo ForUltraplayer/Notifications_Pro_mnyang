@@ -1,6 +1,6 @@
 // @file SettingsViewModel.CardActions.cs
 // @author: rudals252
-// @brief 오버레이 카드 동작 설정(카드 더블클릭으로 앱 열기, 앱을 연 뒤 카드 닫기)을 설정창에 노출한다. 값은 바로 저장한다.
+// @brief 오버레이 카드 동작 설정(카드 더블클릭으로 앱 열기, 앱을 연 뒤 카드 닫기, 위치 고정)을 설정창에 노출한다. 값은 바로 저장한다.
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
 namespace NotificationsPro.ViewModels;
@@ -32,6 +32,21 @@ public partial class SettingsViewModel
                 return;
 
             _settingsManager.Settings.DismissCardAfterOpeningApp = value;
+            _settingsManager.Save();
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Lock the overlay position and size (drag/resize do nothing); clicks keep working. Off by default.</summary>
+    public bool LockOverlayPosition
+    {
+        get => _settingsManager.Settings.LockOverlayPosition;
+        set
+        {
+            if (_settingsManager.Settings.LockOverlayPosition == value)
+                return;
+
+            _settingsManager.Settings.LockOverlayPosition = value;
             _settingsManager.Save();
             OnPropertyChanged();
         }

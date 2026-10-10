@@ -40,6 +40,22 @@ public partial class OverlayWindow : Window
     private const int WM_NCLBUTTONUP = 0x00A2;
     private const int WM_NCLBUTTONDBLCLK = 0x00A3;
     private const int WM_EXITSIZEMOVE = 0x0232;
+    private const int WM_ENTERSIZEMOVE = 0x0231;
+    private const int WM_MOVING = 0x0216;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativeRect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr hWnd, out NativeRect rect);
+
+    // KR-Mnyang fork: "lock overlay position". The system move loop still runs (so click / double-click /
+    // right-click detection stays exactly as before) but WM_MOVING pins the window to where it started.
+    private NativeRect _lockedMoveRect;
+    private bool _lockedMoveActive;
     private const int WM_NCRBUTTONUP = 0x00A5;
     private const int WM_NCMOUSEMOVE = 0x00A0;
     private const int WM_MOUSEWHEEL = 0x020A;
@@ -131,6 +147,7 @@ public partial class OverlayWindow : Window
                 }
 
                 if (_settingsManager.Settings.AllowManualResize
+                    && !_settingsManager.Settings.LockOverlayPosition
                     && TryGetResizeHitTest(lParam, out var resizeHit))
                 {
                     handled = true;
@@ -180,7 +197,30 @@ public partial class OverlayWindow : Window
                 _ncMouseDownTracked = false;
                 break;
 
+            case WM_ENTERSIZEMOVE:
+                _lockedMoveActive = _settingsManager.Settings.LockOverlayPosition
+                    && GetWindowRect(hwnd, out _lockedMoveRect);
+                break;
+
+            case WM_MOVING:
+                if (_lockedMoveActive && lParam != IntPtr.Zero)
+                {
+                    // An attempted drag must not count as a click (which would dismiss the card).
+                    var proposed = Marshal.PtrToStructure<NativeRect>(lParam);
+                    if (_ncMouseDownTracked
+                        && (proposed.Left != _lockedMoveRect.Left || proposed.Top != _lockedMoveRect.Top))
+                    {
+                        _dragOccurredSinceMouseDown = true;
+                    }
+
+                    Marshal.StructureToPtr(_lockedMoveRect, lParam, false);
+                    handled = true;
+                    return (IntPtr)1;
+                }
+                break;
+
             case WM_EXITSIZEMOVE:
+                _lockedMoveActive = false;
                 // KR-Mnyang fork: a finished drag/resize only updated the in-memory position, which was
                 // lost on reboot/sign-out or a crash. Persist it once the move ends.
                 if (!_settingsManager.Settings.FullscreenOverlayMode)
@@ -349,7 +389,7 @@ public partial class OverlayWindow : Window
     private void OnPreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         // Fallback if Win32 hook was not attached for any reason.
-        if (_hookInstalled || _settingsManager.Settings.ClickThrough) return;
+        if (_hookInstalled || _settingsManager.Settings.ClickThrough || _settingsManager.Settings.LockOverlayPosition) return;
         if (e.LeftButton != System.Windows.Input.MouseButtonState.Pressed) return;
         if (IsInteractiveClientElementHit(e.GetPosition(this))) return;
 

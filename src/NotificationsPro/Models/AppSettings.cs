@@ -282,6 +282,8 @@ public class AppSettings
     // Overlay card action (off by default: the upstream overlay is intentionally passive).
     public bool OpenAppOnCardDoubleClick { get; set; } = false;
     public bool DismissCardAfterOpeningApp { get; set; } = true;
+    // Keeps the overlay where it is (no drag move / resize) while clicks still work. Off by default.
+    public bool LockOverlayPosition { get; set; } = false;
 
     /// <summary>
     /// Optional display names for sound files, keyed by the stored rule reference ("sounds/x.wav" or an
@@ -309,6 +311,7 @@ public class AppSettings
         target.ManualMuteConfirmations = CloneManualMuteConfirmations(ManualMuteConfirmations);
         target.OpenAppOnCardDoubleClick = OpenAppOnCardDoubleClick;
         target.DismissCardAfterOpeningApp = DismissCardAfterOpeningApp;
+        target.LockOverlayPosition = LockOverlayPosition;
         target.SoundDisplayNames = CloneSoundDisplayNames(SoundDisplayNames);
     }
 

@@ -2711,6 +2711,17 @@
                                        ToolTip="{loc:Loc Layout_MouseClicksPassThroughOverlay}"/>
                         </DockPanel>
 
+                        <!-- KR-Mnyang fork: lock position/size but keep clicks (unlike click-through). -->
+                        <DockPanel Margin="0,0,0,8">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding LockOverlayPosition}"
+                                          AutomationProperties.AutomationId="LockOverlayPositionToggle"
+                                          AutomationProperties.Name="{loc:Loc Layout_LockOverlayPosition}"
+                                          ToolTip="{loc:Loc Layout_LockOverlayPositionTip}"/>
+                            <TextBlock Text="{loc:Loc Layout_LockOverlayPosition}" Style="{StaticResource SettingLabel}"
+                                       TextWrapping="Wrap" ToolTip="{loc:Loc Layout_LockOverlayPositionTip}"/>
+                        </DockPanel>
+
                         <!-- KR-Mnyang fork: open the sending app from a card (off by default). -->
                         <DockPanel Margin="0,0,0,8">
                             <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
