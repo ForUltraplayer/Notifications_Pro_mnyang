@@ -85,11 +85,14 @@ public class KakaoPopupClassifierTests
     public void LabsSetting_IsOffByDefault_AndSurvivesSnapshotCopies()
     {
         Assert.False(new AppSettings().LabsKakaoPopupDetection);
+        Assert.False(new AppSettings().LabsKakaoShowCard);
 
-        var settings = new AppSettings { LabsKakaoPopupDetection = true };
+        var settings = new AppSettings { LabsKakaoPopupDetection = true, LabsKakaoShowCard = true };
         var copy = new AppSettings();
         settings.CopyForkExtensionsTo(copy);
         Assert.True(copy.LabsKakaoPopupDetection);
+        Assert.True(copy.LabsKakaoShowCard);
         Assert.True(settings.Clone().LabsKakaoPopupDetection);
+        Assert.True(settings.Clone().LabsKakaoShowCard);
     }
 }

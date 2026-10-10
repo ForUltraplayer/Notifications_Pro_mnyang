@@ -3108,6 +3108,15 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Layout settings tab</value>
     <comment>SettingsWindow.xaml:2343:AutomationProperties.Name</comment>
   </data>
+  <data name="Labs_KakaoCardTitle" xml:space="preserve">
+    <value>New KakaoTalk message</value>
+  </data>
+  <data name="Labs_KakaoShowCard" xml:space="preserve">
+    <value>Also show an overlay card</value>
+  </data>
+  <data name="Labs_KakaoShowCardTip" xml:space="preserve">
+    <value>Off plays only the sound (default). On also shows a "New KakaoTalk message" card and keeps it in history; double-clicking the card can open KakaoTalk.</value>
+  </data>
   <data name="Labs_KakaoNever" xml:space="preserve">
     <value>none yet</value>
   </data>
@@ -3133,7 +3142,7 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Status</value>
   </data>
   <data name="Labs_KakaoLimits" xml:space="preserve">
-    <value>• Message text and sender cannot be read; so only a sound is played, no card.
+    <value>• Message text and sender cannot be read; a card, if turned on, only says a message arrived.
 • KakaoTalk's PC popup must be on. While a chat window is in front, KakaoTalk shows no popup, so nothing is detected.
 • Turn off KakaoTalk's own notification sound in KakaoTalk settings, or both sounds play.
 • Tuned for KakaoTalk 26.8. An update that changes the popup window can stop detection.
@@ -3143,10 +3152,10 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Known limits</value>
   </data>
   <data name="Labs_KakaoHowItWorks" xml:space="preserve">
-    <value>KakaoTalk PC does not send Windows notifications; it draws its own popup. This feature watches for that popup window only (KakaoTalk files and settings are not touched) and plays the sound set for the app "카카오톡". KakaoTalk already shows its own popup, so no overlay card or history entry is created. Pause, quiet hours, app mute and sound rules still apply. Set a sound for "카카오톡" in the Apps tab after the first popup has been detected.</value>
+    <value>KakaoTalk PC does not send Windows notifications; it draws its own popup. This feature watches for that popup window only (KakaoTalk files and settings are not touched) and plays the sound set for the app "카카오톡". KakaoTalk already shows its own popup, so by default no overlay card is created (the option below turns it on). Pause, quiet hours, app mute and sound rules still apply. Set a sound for "카카오톡" in the Apps tab after the first popup has been detected.</value>
   </data>
   <data name="Labs_KakaoToggleTip" xml:space="preserve">
-    <value>Plays the sound set for the app "카카오톡" when a KakaoTalk PC popup appears (no card).</value>
+    <value>Plays the sound set for the app "카카오톡" when a KakaoTalk PC popup appears (card: see the option below).</value>
   </data>
   <data name="Labs_KakaoToggle" xml:space="preserve">
     <value>Detect KakaoTalk message popups</value>

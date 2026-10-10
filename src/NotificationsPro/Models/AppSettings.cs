@@ -286,6 +286,8 @@ public class AppSettings
     public bool LockOverlayPosition { get; set; } = false;
     // Labs (experimental, off by default): detect KakaoTalk PC's own message popup windows.
     public bool LabsKakaoPopupDetection { get; set; } = false;
+    // Labs: also show an overlay card for a detected KakaoTalk popup (off = sound only).
+    public bool LabsKakaoShowCard { get; set; } = false;
 
     /// <summary>
     /// Optional display names for sound files, keyed by the stored rule reference ("sounds/x.wav" or an
@@ -315,6 +317,7 @@ public class AppSettings
         target.DismissCardAfterOpeningApp = DismissCardAfterOpeningApp;
         target.LockOverlayPosition = LockOverlayPosition;
         target.LabsKakaoPopupDetection = LabsKakaoPopupDetection;
+        target.LabsKakaoShowCard = LabsKakaoShowCard;
         target.SoundDisplayNames = CloneSoundDisplayNames(SoundDisplayNames);
     }
 

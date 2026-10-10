@@ -1,6 +1,6 @@
 // @file SettingsViewModel.Labs.cs
 // @author: rudals252
-// @brief [실험실] 설정창 실험실 탭의 값: 카카오톡 팝업 감지 켜기/끄기(설정 적용으로 앱이 감지기를 시작·중지)와 감지 상태 문구.
+// @brief [실험실] 설정창 실험실 탭의 값: 카카오톡 팝업 감지 켜기/끄기(설정 적용으로 앱이 감지기를 시작·중지), 카드 표시 여부, 감지 상태 문구.
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
 namespace NotificationsPro.ViewModels;
@@ -21,6 +21,22 @@ public partial class SettingsViewModel
             // Apply (not just Save) so SettingsChanged starts/stops the watcher in the app.
             var updated = _settingsManager.Settings.Clone();
             updated.LabsKakaoPopupDetection = value;
+            _settingsManager.Apply(updated);
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Labs: show an overlay card for KakaoTalk popups too. Off by default (sound only).</summary>
+    public bool LabsKakaoShowCard
+    {
+        get => _settingsManager.Settings.LabsKakaoShowCard;
+        set
+        {
+            if (_settingsManager.Settings.LabsKakaoShowCard == value)
+                return;
+
+            var updated = _settingsManager.Settings.Clone();
+            updated.LabsKakaoShowCard = value;
             _settingsManager.Apply(updated);
             OnPropertyChanged();
         }

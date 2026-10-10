@@ -1,6 +1,6 @@
 // @file App.Labs.cs
 // @author: rudals252
-// @brief [실험실] 카카오톡 팝업 감지기의 시작·중지(설정 연동), 감지 시 "카카오톡" 알림으로 대기열에 전달, 설정창 실험실 탭 상태 갱신.
+// @brief [실험실] 카카오톡 팝업 감지기의 시작·중지(설정 연동), 감지 시 소리만 재생(옵션으로 카드도 표시), 설정창 실험실 탭 상태 갱신.
 // Derived from Notifications Pro (https://github.com/lwytch/Notifications-Pro), GPL v3.
 
 using System.Windows.Threading;
@@ -52,8 +52,20 @@ public partial class App
 
     private void OnKakaoPopupDetected(string? appUserModelId)
     {
-        // Sound only: KakaoTalk already shows its own popup and its text cannot be read, so a card would
-        // add nothing. Pause, quiet hours, app mute and the app's sound rule still apply.
+        if (_settingsManager?.Settings.LabsKakaoShowCard == true)
+        {
+            // Normal queue: pause, quiet hours, app mute, de-duplication and sound rules all apply.
+            // The popup text cannot be read, so the card only says a message arrived.
+            _queueManager?.AddNotification(
+                KakaoTalkAppName,
+                LocalizationManager.Get("Labs_KakaoCardTitle"),
+                string.Empty,
+                appUserModelId);
+            return;
+        }
+
+        // Default, sound only: KakaoTalk already shows its own popup. Pause, quiet hours, app mute and
+        // the app's sound rule still apply.
         if (_queueManager?.AcceptSoundOnlyNotification(KakaoTalkAppName, appUserModelId) == true)
             _playbackCoordinator?.EnqueueNotificationSound(KakaoTalkAppName, appUserModelId);
     }

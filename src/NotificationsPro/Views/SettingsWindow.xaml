@@ -3910,6 +3910,16 @@
                                        TextWrapping="Wrap" ToolTip="{loc:Loc Labs_KakaoToggleTip}"/>
                         </DockPanel>
 
+                        <DockPanel Margin="0,0,0,8" IsEnabled="{Binding LabsKakaoPopupDetection}">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding LabsKakaoShowCard}"
+                                          AutomationProperties.AutomationId="LabsKakaoShowCardToggle"
+                                          AutomationProperties.Name="{loc:Loc Labs_KakaoShowCard}"
+                                          ToolTip="{loc:Loc Labs_KakaoShowCardTip}"/>
+                            <TextBlock Text="{loc:Loc Labs_KakaoShowCard}" Style="{StaticResource SettingLabel}"
+                                       TextWrapping="Wrap" ToolTip="{loc:Loc Labs_KakaoShowCardTip}"/>
+                        </DockPanel>
+
                         <TextBlock Text="{loc:Loc Labs_KakaoHowItWorks}" Style="{StaticResource SettingDesc}"
                                    TextWrapping="Wrap" Margin="0,0,0,8"/>
 
