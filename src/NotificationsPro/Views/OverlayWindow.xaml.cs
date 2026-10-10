@@ -135,7 +135,9 @@ public partial class OverlayWindow : Window
                 return (IntPtr)HTCAPTION;
 
             case WM_NCLBUTTONDBLCLK:
-                // Prevent maximize on double-click
+                // Prevent maximize on double-click. KR-Mnyang fork: optionally open the card's app.
+                if (_settingsManager.Settings.OpenAppOnCardDoubleClick)
+                    HandleCardDoubleClick(lParam);
                 handled = true;
                 return IntPtr.Zero;
 
@@ -158,7 +160,12 @@ public partial class OverlayWindow : Window
                     var clickItem = FindNotificationAtScreenPoint(lParam);
                     if (clickItem != null && DataContext is OverlayViewModel clickVm)
                     {
-                        clickVm.Queue.DismissNotification(clickItem);
+                        // With "open app on double-click" the dismiss waits one double-click interval,
+                        // so the second click can still reach the card. Otherwise dismiss at once (upstream).
+                        if (_settingsManager.Settings.OpenAppOnCardDoubleClick)
+                            ScheduleCardDismiss(clickItem);
+                        else
+                            clickVm.Queue.DismissNotification(clickItem);
                         handled = true;
                         _ncMouseDownTracked = false;
                         return IntPtr.Zero;
@@ -193,6 +200,56 @@ public partial class OverlayWindow : Window
 
         return IntPtr.Zero;
     }
+
+    // ── KR-Mnyang fork: open the card's app on double-click ───────────────
+
+    private DispatcherTimer? _pendingDismissTimer;
+    private NotificationItem? _pendingDismissItem;
+
+    private void ScheduleCardDismiss(NotificationItem item)
+    {
+        CancelPendingCardDismiss();
+        _pendingDismissItem = item;
+        _pendingDismissTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(Math.Clamp(GetDoubleClickTime(), 100, 1000)),
+        };
+        _pendingDismissTimer.Tick += (_, _) =>
+        {
+            var pending = _pendingDismissItem;
+            CancelPendingCardDismiss();
+            if (pending != null && DataContext is OverlayViewModel vm)
+                vm.Queue.DismissNotification(pending);
+        };
+        _pendingDismissTimer.Start();
+    }
+
+    private void CancelPendingCardDismiss()
+    {
+        _pendingDismissTimer?.Stop();
+        _pendingDismissTimer = null;
+        _pendingDismissItem = null;
+    }
+
+    private void HandleCardDoubleClick(IntPtr lParam)
+    {
+        var item = FindNotificationAtScreenPoint(lParam) ?? _pendingDismissItem;
+        if (item == null)
+            return;
+
+        // The first click scheduled a dismiss; the double-click decides instead.
+        if (ReferenceEquals(item, _pendingDismissItem))
+            CancelPendingCardDismiss();
+
+        if (AppLauncher.TryLaunch(item.AppId))
+        {
+            if (_settingsManager.Settings.DismissCardAfterOpeningApp && DataContext is OverlayViewModel vm)
+                vm.Queue.DismissNotification(item);
+        }
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
 
     private void HandleOverflowBadgeClick()
     {
@@ -1156,6 +1213,26 @@ public partial class OverlayWindow : Window
                     dismissVm.Queue.DismissNotification(item);
             };
             menu.Items.Add(dismissMenuItem);
+
+            // KR-Mnyang fork: explicit "open app" (works even when double-click opening is off).
+            if (AppLauncher.CanLaunch(item.AppId))
+            {
+                var openAppMenuItem = new MenuItem
+                {
+                    Header = LocalizationManager.Get("Overlay_MenuOpenApp"),
+                    ToolTip = LocalizationManager.Get("Overlay_MenuOpenAppTip"),
+                };
+                openAppMenuItem.Click += (_, _) =>
+                {
+                    if (AppLauncher.TryLaunch(item.AppId)
+                        && _settingsManager.Settings.DismissCardAfterOpeningApp
+                        && DataContext is OverlayViewModel openVm)
+                    {
+                        openVm.Queue.DismissNotification(item);
+                    }
+                };
+                menu.Items.Add(openAppMenuItem);
+            }
 
             var copyMenuItem = new MenuItem
             {

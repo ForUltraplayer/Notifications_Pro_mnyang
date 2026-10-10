@@ -3015,6 +3015,18 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
     <value>Click-Through Mode</value>
     <comment>SettingsWindow.xaml:2636:Text</comment>
   </data>
+  <data name="Layout_DismissAfterOpeningAppTip" xml:space="preserve">
+    <value>Removes the card from the overlay once its app was opened from it.</value>
+  </data>
+  <data name="Layout_DismissAfterOpeningApp" xml:space="preserve">
+    <value>Dismiss the card after opening the app</value>
+  </data>
+  <data name="Layout_OpenAppOnDoubleClickTip" xml:space="preserve">
+    <value>Opens or brings forward the app that sent the notification. It cannot jump to the specific chat or page; use the Windows notification center (Win+N) for that. With this on, a single click dismisses a card after a short double-click delay. Not available in click-through mode or for notifications without an app ID.</value>
+  </data>
+  <data name="Layout_OpenAppOnDoubleClick" xml:space="preserve">
+    <value>Open the app when a card is double-clicked</value>
+  </data>
   <data name="Layout_ConfigureOverlayWidthHeightLimits" xml:space="preserve">
     <value>Configure overlay width, height limits, and quick presets.</value>
     <comment>SettingsWindow.xaml:2400:ToolTip</comment>
@@ -3893,6 +3905,12 @@ Cancel = do not import.
   <data name="Overlay_MenuDismiss" xml:space="preserve">
     <value>Dismiss</value>
     <comment>Converters, Models/NotificationItem.cs, Helpers/*Formatter.cs, Services/SpokenNotificationService.cs, Services/HotkeyManager.cs, Views/OverlayWindow.xaml.cs</comment>
+  </data>
+  <data name="Overlay_MenuOpenAppTip" xml:space="preserve">
+    <value>Opens the app that sent this notification (not the specific chat).</value>
+  </data>
+  <data name="Overlay_MenuOpenApp" xml:space="preserve">
+    <value>Open App</value>
   </data>
   <data name="Overlay_MenuHideSearch" xml:space="preserve">
     <value>Hide Search</value>

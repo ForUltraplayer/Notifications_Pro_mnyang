@@ -2711,6 +2711,27 @@
                                        ToolTip="{loc:Loc Layout_MouseClicksPassThroughOverlay}"/>
                         </DockPanel>
 
+                        <!-- KR-Mnyang fork: open the sending app from a card (off by default). -->
+                        <DockPanel Margin="0,0,0,8">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding OpenAppOnCardDoubleClick}"
+                                          AutomationProperties.AutomationId="OpenAppOnCardDoubleClickToggle"
+                                          AutomationProperties.Name="{loc:Loc Layout_OpenAppOnDoubleClick}"
+                                          ToolTip="{loc:Loc Layout_OpenAppOnDoubleClickTip}"/>
+                            <TextBlock Text="{loc:Loc Layout_OpenAppOnDoubleClick}" Style="{StaticResource SettingLabel}"
+                                       TextWrapping="Wrap" ToolTip="{loc:Loc Layout_OpenAppOnDoubleClickTip}"/>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,0,0,8">
+                            <ToggleButton DockPanel.Dock="Right" Style="{StaticResource ToggleSwitch}"
+                                          IsChecked="{Binding DismissCardAfterOpeningApp}"
+                                          AutomationProperties.AutomationId="DismissCardAfterOpeningAppToggle"
+                                          AutomationProperties.Name="{loc:Loc Layout_DismissAfterOpeningApp}"
+                                          ToolTip="{loc:Loc Layout_DismissAfterOpeningAppTip}"/>
+                            <TextBlock Text="{loc:Loc Layout_DismissAfterOpeningApp}" Style="{StaticResource SettingLabel}"
+                                       TextWrapping="Wrap" ToolTip="{loc:Loc Layout_DismissAfterOpeningAppTip}"/>
+                        </DockPanel>
+
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

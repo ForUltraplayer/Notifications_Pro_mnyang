@@ -2278,6 +2278,18 @@ Notifications Pro는 보관함을 RAM에만 두고 앱을 닫으면 지웁니다
   <data name="Layout_ClickThroughMode" xml:space="preserve">
     <value>클릭 통과 모드</value>
   </data>
+  <data name="Layout_DismissAfterOpeningAppTip" xml:space="preserve">
+    <value>카드에서 앱을 열면 그 카드를 오버레이에서 지웁니다.</value>
+  </data>
+  <data name="Layout_DismissAfterOpeningApp" xml:space="preserve">
+    <value>앱을 연 뒤 카드 닫기</value>
+  </data>
+  <data name="Layout_OpenAppOnDoubleClickTip" xml:space="preserve">
+    <value>알림을 보낸 앱을 열거나 앞으로 가져옵니다. 알림의 특정 대화나 페이지로는 이동하지 않으며, 그때는 Windows 알림 센터(Win+N)를 쓰세요. 켜면 한 번 클릭으로 카드를 닫는 동작이 더블클릭 판정 시간만큼 늦어집니다. 클릭 통과 모드나 앱 ID가 없는 알림에서는 동작하지 않습니다.</value>
+  </data>
+  <data name="Layout_OpenAppOnDoubleClick" xml:space="preserve">
+    <value>카드를 더블클릭하면 앱 열기</value>
+  </data>
   <data name="Layout_ConfigureOverlayWidthHeightLimits" xml:space="preserve">
     <value>오버레이 너비, 높이 제한, 빠른 프리셋을 설정합니다.</value>
   </data>
@@ -2939,6 +2951,12 @@ Notifications Pro는 보관함을 RAM에만 두고 앱을 닫으면 지웁니다
   </data>
   <data name="Overlay_MenuDismiss" xml:space="preserve">
     <value>닫기</value>
+  </data>
+  <data name="Overlay_MenuOpenAppTip" xml:space="preserve">
+    <value>이 알림을 보낸 앱을 엽니다(특정 대화로는 이동하지 않음).</value>
+  </data>
+  <data name="Overlay_MenuOpenApp" xml:space="preserve">
+    <value>앱 열기</value>
   </data>
   <data name="Overlay_MenuHideSearch" xml:space="preserve">
     <value>검색 숨기기</value>

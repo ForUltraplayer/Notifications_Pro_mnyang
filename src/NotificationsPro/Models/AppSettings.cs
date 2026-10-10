@@ -279,6 +279,10 @@ public class AppSettings
     public bool RestartOnCrash { get; set; } = false;
     public Dictionary<string, ManualMuteConfirmation> ManualMuteConfirmations { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
+    // Overlay card action (off by default: the upstream overlay is intentionally passive).
+    public bool OpenAppOnCardDoubleClick { get; set; } = false;
+    public bool DismissCardAfterOpeningApp { get; set; } = true;
+
     /// <summary>
     /// Optional display names for sound files, keyed by the stored rule reference ("sounds/x.wav" or an
     /// allowed absolute path). Written by "Import" when the internal file name differs from the original
@@ -303,6 +307,8 @@ public class AppSettings
         target.StartMinimizedToTray = StartMinimizedToTray;
         target.RestartOnCrash = RestartOnCrash;
         target.ManualMuteConfirmations = CloneManualMuteConfirmations(ManualMuteConfirmations);
+        target.OpenAppOnCardDoubleClick = OpenAppOnCardDoubleClick;
+        target.DismissCardAfterOpeningApp = DismissCardAfterOpeningApp;
         target.SoundDisplayNames = CloneSoundDisplayNames(SoundDisplayNames);
     }
 
