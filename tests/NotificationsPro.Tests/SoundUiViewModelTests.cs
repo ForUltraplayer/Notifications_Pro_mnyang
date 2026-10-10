@@ -238,6 +238,13 @@ public class SoundUiViewModelTests : IDisposable
             Assert.Equal(new[] { refs[0] }, custom.Files);
             Assert.Contains("Own list", app.SummaryText);
 
+            // Regression: toggling the master switch must refresh the per-app summary text.
+            Assert.DoesNotContain("off", app.SummaryText, StringComparison.OrdinalIgnoreCase);
+            h.ViewModel.SoundEnabled = false;
+            Assert.Contains("off", app.SummaryText, StringComparison.OrdinalIgnoreCase);
+            h.ViewModel.SoundEnabled = true;
+            Assert.DoesNotContain("off", app.SummaryText, StringComparison.OrdinalIgnoreCase);
+
             // A later settings-window save keeps the app rule (copied from current settings).
             h.ViewModel.FontSize = 19;
             Save(h.ViewModel);

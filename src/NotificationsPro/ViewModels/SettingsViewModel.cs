@@ -316,7 +316,17 @@ public partial class SettingsViewModel : BaseViewModel
 
     // Notification sounds (M9.5)
     private bool _soundEnabled;
-    public bool SoundEnabled { get => _soundEnabled; set { if (SetProperty(ref _soundEnabled, value)) QueueSave(); } }
+    public bool SoundEnabled
+    {
+        get => _soundEnabled;
+        set
+        {
+            if (!SetProperty(ref _soundEnabled, value)) return;
+            QueueSave();
+            // KR-Mnyang fork: the per-app summaries mention "sounds are off", so keep them in sync.
+            RefreshPerAppSummaries();
+        }
+    }
 
     private string _defaultSound = "None";
     public string DefaultSound
