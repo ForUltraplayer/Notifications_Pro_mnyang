@@ -1,6 +1,6 @@
 // @file KakaoPopupClassifierTests.cs
 // @author: rudals252
-// @brief [실험실] 카카오톡 팝업 판별 규칙을 2026-10-10 실측 창 정보(팝업·메인 창·그림자 창·툴팁·최소화 창)로 검증하고, 시작 메뉴 AUMID 유도와 설정 기본값(끔)을 확인한다.
+// @brief [실험실] 카카오톡 팝업 판별 규칙을 2026-10-10 실측 창 정보(팝업·메인 창·그림자 창·툴팁·최소화 창)로 검증하고, 시작 메뉴 AUMID 유도, 카드 없이 소리만 내는 경로(일시 정지·음소거 적용), 설정 기본값(끔)을 확인한다.
 
 using NotificationsPro.Helpers;
 using NotificationsPro.Models;
@@ -57,6 +57,28 @@ public class KakaoPopupClassifierTests
         Assert.True(AppLauncher.CanLaunch(aumid));
         Assert.Null(KakaoTalkPopupWatcher.DeriveAppUserModelId(@"D:\Portable\KakaoTalk.exe"));
         Assert.Null(KakaoTalkPopupWatcher.DeriveAppUserModelId(null));
+    }
+
+    [Fact]
+    public void SoundOnlyNotification_AddsNoCard_ButHonoursPauseAndMute()
+    {
+        var manager = TestAppDataIsolation.CreateSettingsManager();
+        var queue = new QueueManager(manager);
+
+        Assert.True(queue.AcceptSoundOnlyNotification("카카오톡", null));
+        Assert.Empty(queue.VisibleNotifications);
+        Assert.Contains("카카오톡", queue.SeenAppNames);
+
+        var muted = manager.Settings.Clone();
+        muted.MutedApps.Add("카카오톡");
+        manager.Apply(muted);
+        Assert.False(queue.AcceptSoundOnlyNotification("카카오톡", null));
+
+        var paused = manager.Settings.Clone();
+        paused.MutedApps.Clear();
+        paused.NotificationsPaused = true;
+        manager.Apply(paused);
+        Assert.False(queue.AcceptSoundOnlyNotification("카카오톡", null));
     }
 
     [Fact]

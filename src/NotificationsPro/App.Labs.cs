@@ -52,13 +52,10 @@ public partial class App
 
     private void OnKakaoPopupDetected(string? appUserModelId)
     {
-        // Goes through the normal queue: pause, quiet hours, app mute, de-duplication and sound rules
-        // all apply. The popup text cannot be read, so the card only says a message arrived.
-        _queueManager?.AddNotification(
-            KakaoTalkAppName,
-            LocalizationManager.Get("Labs_KakaoCardTitle"),
-            string.Empty,
-            appUserModelId);
+        // Sound only: KakaoTalk already shows its own popup and its text cannot be read, so a card would
+        // add nothing. Pause, quiet hours, app mute and the app's sound rule still apply.
+        if (_queueManager?.AcceptSoundOnlyNotification(KakaoTalkAppName, appUserModelId) == true)
+            _playbackCoordinator?.EnqueueNotificationSound(KakaoTalkAppName, appUserModelId);
     }
 
     private void UpdateLabsStatus()

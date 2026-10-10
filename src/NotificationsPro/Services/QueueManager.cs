@@ -164,6 +164,34 @@ public class QueueManager : BaseViewModel
     }
 
     /// <summary>
+    /// KR-Mnyang fork (Labs): an app that shows its own popup (KakaoTalk) gets a sound but no card or history.
+    /// Applies pause, quiet hours and per-app mute like <see cref="AddNotification(string, string, string, string?)"/>
+    /// and lists the app as seen so a sound can be assigned to it. Returns true when the sound should play.
+    /// </summary>
+    public bool AcceptSoundOnlyNotification(string appName, string? appId)
+    {
+        var settings = _settingsManager.Settings;
+        if (settings.NotificationsPaused)
+            return false;
+
+        appName = appName?.Trim() ?? string.Empty;
+        appId = string.IsNullOrWhiteSpace(appId) ? null : appId.Trim();
+        AppIdentities.Observe(appName, appId);
+
+        if (IsInQuietHours())
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(appName))
+        {
+            if (settings.MutedApps.Contains(appName, StringComparer.OrdinalIgnoreCase))
+                return false;
+            SeenAppNames.Add(appName);
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Shared-policy acceptance point (design §6). The visible-queue de-duplication above already ran;
     /// notifications the overlay will not keep are additionally de-duplicated by RAM fingerprint so the
     /// policy path honours DeduplicationEnabled outside the overlay. With de-duplication off, nothing is dropped.
