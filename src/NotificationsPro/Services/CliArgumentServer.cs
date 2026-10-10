@@ -12,7 +12,7 @@ namespace NotificationsPro.Services;
 /// <summary>
 /// Receives command lines forwarded by second launches (K12). One connection carries one message and
 /// is handed to the callback exactly once, then acknowledged with <see cref="Accepted"/>. The pipe is
-/// restricted to the current user (<see cref="PipeOptions.CurrentUserOnly"/>) and its name carries the
+/// restricted to the current Windows account by an explicit ACL (see CreatePipeSecurity) and its name carries the
 /// session id, mirroring the per-session Local\ mutex.
 /// </summary>
 public sealed class CliArgumentServer : IDisposable
@@ -37,6 +37,20 @@ public sealed class CliArgumentServer : IDisposable
         _onArguments = onArguments ?? throw new ArgumentNullException(nameof(onArguments));
     }
 
+    /// <summary>Only the current Windows account (any token of it) may connect.</summary>
+    internal static System.IO.Pipes.PipeSecurity CreatePipeSecurity()
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        var user = identity.User ?? throw new InvalidOperationException("No user SID for the current token.");
+        var security = new System.IO.Pipes.PipeSecurity();
+        security.SetOwner(user);
+        security.AddAccessRule(new System.IO.Pipes.PipeAccessRule(
+            user,
+            System.IO.Pipes.PipeAccessRights.ReadWrite | System.IO.Pipes.PipeAccessRights.CreateNewInstance,
+            System.Security.AccessControl.AccessControlType.Allow));
+        return security;
+    }
+
     public void Start()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
@@ -51,12 +65,19 @@ public sealed class CliArgumentServer : IDisposable
             NamedPipeServerStream server;
             try
             {
-                server = new NamedPipeServerStream(
+                // Explicit ACL for this Windows account instead of PipeOptions.CurrentUserOnly: that option
+                // compares token owners, which differ between an elevated and a limited token of the SAME
+                // user (e.g. logon task = limited, Start-menu launch with UAC off = elevated), so forwarding
+                // between them failed. The account SID is the same for both tokens.
+                server = NamedPipeServerStreamAcl.Create(
                     _pipeName,
                     PipeDirection.InOut,
                     maxNumberOfServerInstances: 1,
                     PipeTransmissionMode.Byte,
-                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                    PipeOptions.Asynchronous,
+                    inBufferSize: 0,
+                    outBufferSize: 0,
+                    CreatePipeSecurity());
                 createFailures = 0;
             }
             catch (Exception) when (!cancellationToken.IsCancellationRequested)

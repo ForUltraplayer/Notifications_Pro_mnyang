@@ -33,8 +33,8 @@ public static class CliArgumentClient
 
         try
         {
-            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut,
-                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+            // The server's ACL admits only this Windows account (see CliArgumentServer.CreatePipeSecurity).
+            using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             client.Connect(connectTimeoutMs);
 
             // From here on the message may have been delivered: never retry.

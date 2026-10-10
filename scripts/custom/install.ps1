@@ -32,12 +32,32 @@ function Test-SamePath([string]$a, [string]$b) {
         [StringComparison]::OrdinalIgnoreCase)
 }
 
+if (-not ('ForkScripts.ProcessPath' -as [type])) {
+    Add-Type -Namespace ForkScripts -Name ProcessPath -MemberDefinition @'
+[DllImport("kernel32.dll", SetLastError = true)] public static extern System.IntPtr OpenProcess(uint access, bool inherit, int pid);
+[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] public static extern bool QueryFullProcessImageName(System.IntPtr h, int flags, System.Text.StringBuilder sb, ref int size);
+[DllImport("kernel32.dll")] public static extern bool CloseHandle(System.IntPtr h);
+'@
+}
+
+function Get-ProcessImagePath([System.Diagnostics.Process]$proc) {
+    # MainModule fails for instances started by Task Scheduler (logon task); the limited-access query still works.
+    try { $p = [string]$proc.MainModule.FileName; if ($p) { return $p } } catch { }
+    $h = [ForkScripts.ProcessPath]::OpenProcess(0x1000, $false, $proc.Id)  # PROCESS_QUERY_LIMITED_INFORMATION
+    if ($h -eq [IntPtr]::Zero) { return '' }
+    try {
+        $sb = New-Object System.Text.StringBuilder 1024
+        $size = $sb.Capacity
+        if ([ForkScripts.ProcessPath]::QueryFullProcessImageName($h, 0, $sb, [ref]$size)) { return $sb.ToString() }
+        return ''
+    } finally { [void][ForkScripts.ProcessPath]::CloseHandle($h) }
+}
+
 function Get-ForkProcesses {
     # 이름이 같은 프로세스를 모두 찾되, 판단은 실행 파일 전체 경로로 한다(설계 §15). 경로를 읽지 못하면 빈 문자열(대상 아님).
     @(Get-Process -Name ([IO.Path]::GetFileNameWithoutExtension($exeName)) -ErrorAction SilentlyContinue | ForEach-Object {
         $proc = $_
-        $path = ''
-        try { $path = [string]$proc.MainModule.FileName } catch { $path = '' }
+        $path = Get-ProcessImagePath $proc
         [pscustomobject]@{ ProcessId = [int]$proc.Id; SessionId = [int]$proc.SessionId; Path = $path }
     })
 }

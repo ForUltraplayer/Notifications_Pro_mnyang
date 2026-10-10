@@ -108,7 +108,7 @@ public class CliForwardingTests
         using var server = new CliArgumentServer(pipeName, args => received.Enqueue(args));
         server.Start();
 
-        using (var raw = new System.IO.Pipes.NamedPipeClientStream(".", pipeName, System.IO.Pipes.PipeDirection.InOut, System.IO.Pipes.PipeOptions.CurrentUserOnly))
+        using (var raw = new System.IO.Pipes.NamedPipeClientStream(".", pipeName, System.IO.Pipes.PipeDirection.InOut, System.IO.Pipes.PipeOptions.None))
         {
             raw.Connect(5000);
             var garbage = new byte[] { 5, 0, 0, 0, (byte)'x', (byte)'y', (byte)'z', (byte)'!', (byte)'?' };
@@ -126,5 +126,21 @@ public class CliForwardingTests
     {
         Assert.Equal("NotificationsProKR-Mnyang.Cli.1", ForkIdentity.GetCliPipeName(1));
         Assert.NotEqual(ForkIdentity.GetCliPipeName(1), ForkIdentity.GetCliPipeName(2));
+    }
+
+    [Fact]
+    public void PipeSecurity_AdmitsOnlyTheCurrentAccount_WhateverTheTokenElevation()
+    {
+        using var identity = System.Security.Principal.WindowsIdentity.GetCurrent();
+        var security = CliArgumentServer.CreatePipeSecurity();
+        var rules = security.GetAccessRules(true, false, typeof(System.Security.Principal.SecurityIdentifier))
+            .Cast<System.IO.Pipes.PipeAccessRule>()
+            .ToList();
+
+        // One allow rule, for the account SID (identical for elevated and limited tokens of this user).
+        var rule = Assert.Single(rules);
+        Assert.Equal(identity.User, rule.IdentityReference);
+        Assert.Equal(System.Security.AccessControl.AccessControlType.Allow, rule.AccessControlType);
+        Assert.Equal(identity.User, security.GetOwner(typeof(System.Security.Principal.SecurityIdentifier)));
     }
 }
