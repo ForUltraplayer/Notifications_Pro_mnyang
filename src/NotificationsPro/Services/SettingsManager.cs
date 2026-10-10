@@ -272,6 +272,7 @@ public class SettingsManager
         settings.PerAppBackgroundImages ??= new Dictionary<string, string>();
         settings.PresentationApps ??= new List<string>();
         NormalizeForkSettings(settings);
+        NormalizeDurations(settings);
         settings.ReadNotificationsAloudTriggerMode = NarrationTriggerModeHelper.Normalize(settings.ReadNotificationsAloudTriggerMode);
         settings.NotificationAnimationStyle = NotificationAnimationStyleHelper.Normalize(
             hasNotificationAnimationStyle
@@ -361,6 +362,27 @@ public class SettingsManager
         }
         settings.SettingsThemeMode = SettingsThemeService.ResolveThemeModeForLoadedSettings(settings);
     }
+
+    // KR-Mnyang fork: timing values feed TimeSpan/DispatcherTimer directly. A hand-edited or imported
+    // NaN, infinite, negative or absurdly large value would throw while a notification is being queued,
+    // so invalid values fall back to the defaults and valid ones are capped (UI sliders stay well inside).
+    internal const double MaxDurationSeconds = 86_400;
+    internal const double MaxAnimationDurationMs = 10_000;
+
+    internal static void NormalizeDurations(AppSettings settings)
+    {
+        var defaults = new AppSettings();
+        settings.NotificationDuration = SanitizePositive(settings.NotificationDuration, defaults.NotificationDuration, MaxDurationSeconds);
+        settings.AutoDurationBaseSeconds = SanitizePositive(settings.AutoDurationBaseSeconds, defaults.AutoDurationBaseSeconds, MaxDurationSeconds);
+        settings.AutoDurationSecondsPerLine = SanitizeNonNegative(settings.AutoDurationSecondsPerLine, defaults.AutoDurationSecondsPerLine, MaxDurationSeconds);
+        settings.AnimationDurationMs = SanitizeNonNegative(settings.AnimationDurationMs, defaults.AnimationDurationMs, MaxAnimationDurationMs);
+    }
+
+    private static double SanitizePositive(double value, double fallback, double max)
+        => double.IsFinite(value) && value > 0 ? Math.Min(value, max) : fallback;
+
+    private static double SanitizeNonNegative(double value, double fallback, double max)
+        => double.IsFinite(value) && value >= 0 ? Math.Min(value, max) : fallback;
 
     // KR-Mnyang fork (schema v6): null-safety, case-insensitive app keys, value ranges.
     // Sound rule file paths are normalized by AppSettingsAssetPathHelper.NormalizeForRuntime.

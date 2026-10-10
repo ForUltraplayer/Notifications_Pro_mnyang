@@ -279,9 +279,19 @@ public class QueueManager : BaseViewModel
                 settings.AutoDurationBaseSeconds + (lines * settings.AutoDurationSecondsPerLine));
         }
 
+        // KR-Mnyang fork: never let an out-of-range value (set in memory, bypassing the loader) throw here
+        // and drop the notification; SettingsManager.NormalizeDurations handles loaded/applied settings.
+        if (!double.IsFinite(durationSeconds) || durationSeconds <= 0)
+            durationSeconds = new AppSettings().NotificationDuration;
+        durationSeconds = Math.Min(durationSeconds, SettingsManager.MaxDurationSeconds);
+        var animationMs = settings.AnimationDurationMs;
+        if (!double.IsFinite(animationMs) || animationMs < 0)
+            animationMs = 0;
+        animationMs = Math.Min(animationMs, SettingsManager.MaxAnimationDurationMs);
+
         var duration = TimeSpan.FromSeconds(durationSeconds);
         var animDuration = settings.AnimationsEnabled
-            ? TimeSpan.FromMilliseconds(settings.AnimationDurationMs)
+            ? TimeSpan.FromMilliseconds(animationMs)
             : TimeSpan.Zero;
 
         var timer = new DispatcherTimer { Interval = duration };
