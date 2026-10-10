@@ -156,4 +156,59 @@ public class WinRtPollTrackerTests
     {
         Assert.Equal(expected, WinRtPollTracker.EvaluateAccess(status, currentlyRevoked));
     }
+
+    [Fact]
+    public void FailedRead_IsReportedAgain_UntilMaxAttempts()
+    {
+        var tracker = new WinRtPollTracker();
+        tracker.Seed(Array.Empty<WinRtNotificationKey>());
+        var key = Key("App.A", 5);
+
+        var attempts = 0;
+        for (var poll = 0; poll < 6; poll++)
+        {
+            var newKeys = tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key });
+            if (newKeys.Contains(key))
+            {
+                attempts++;
+                tracker.TryScheduleRetry(key); // every read fails
+            }
+        }
+
+        Assert.Equal(WinRtPollTracker.MaxExtractAttempts, attempts);
+        Assert.True(tracker.Contains(key)); // exhausted: stays handled, no endless retries
+    }
+
+    [Fact]
+    public void FailedRead_ThenSuccess_IsForwardedOnceAndNotRetriedAgain()
+    {
+        var tracker = new WinRtPollTracker();
+        tracker.Seed(Array.Empty<WinRtNotificationKey>());
+        var key = Key("App.A", 6);
+
+        Assert.Contains(key, tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key }));
+        Assert.True(tracker.TryScheduleRetry(key));
+
+        Assert.Contains(key, tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key }));
+        tracker.ClearRetry(key); // forwarded this time
+
+        Assert.Empty(tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key }));
+    }
+
+    [Fact]
+    public void RetryCounter_IsDroppedWhenTheNotificationLeavesTheList()
+    {
+        var tracker = new WinRtPollTracker();
+        tracker.Seed(Array.Empty<WinRtNotificationKey>());
+        var key = Key("App.A", 7);
+
+        tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key });
+        tracker.TryScheduleRetry(key);
+        tracker.TryScheduleRetry(key);
+        tracker.ProcessSnapshot(tracker.BeginSnapshot(), Array.Empty<WinRtNotificationKey>()); // gone
+
+        // Same key listed again later starts from a fresh budget.
+        Assert.Contains(key, tracker.ProcessSnapshot(tracker.BeginSnapshot(), new[] { key }));
+        Assert.True(tracker.TryScheduleRetry(key));
+    }
 }

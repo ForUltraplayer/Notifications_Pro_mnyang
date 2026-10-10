@@ -13,6 +13,17 @@ namespace NotificationsPro.Services;
 /// </summary>
 public readonly record struct WinRtNotificationKey(string AppId, uint Id, DateTimeOffset CreationTime);
 
+/// <summary>Outcome of reading and forwarding one WinRT notification.</summary>
+public enum WinRtExtractResult
+{
+    /// <summary>Forwarded to the queue (stays handled).</summary>
+    Forwarded,
+    /// <summary>Deliberately skipped, e.g. this app's own balloon (stays handled).</summary>
+    Ignored,
+    /// <summary>Text could not be read yet; release it so a later poll tries again (limited).</summary>
+    Retry
+}
+
 /// <summary>What the listener should do after checking the access status on a poll tick.</summary>
 public enum WinRtAccessDecision
 {
@@ -35,6 +46,11 @@ public sealed class WinRtPollTracker
 {
     public const string UnknownAppId = "Unknown";
 
+    /// <summary>How many times a notification whose text could not be read is tried in total.</summary>
+    public const int MaxExtractAttempts = 3;
+
+    private readonly Dictionary<WinRtNotificationKey, int> _extractAttempts = new();
+
     // Key -> snapshot generation in which the key was first recorded.
     private readonly Dictionary<WinRtNotificationKey, long> _seen = new();
     private long _generation;
@@ -54,6 +70,7 @@ public sealed class WinRtPollTracker
     public void Seed(IEnumerable<WinRtNotificationKey> existing)
     {
         _seen.Clear();
+        _extractAttempts.Clear();
         _generation++;
         foreach (var key in existing)
             _seen[key] = _generation;
@@ -62,6 +79,7 @@ public sealed class WinRtPollTracker
     public void Reset()
     {
         _seen.Clear();
+        _extractAttempts.Clear();
         _generation = 0;
     }
 
@@ -116,8 +134,33 @@ public sealed class WinRtPollTracker
         foreach (var key in stale)
             _seen.Remove(key);
 
+        // Retry counters only matter while the notification is still listed.
+        foreach (var key in _extractAttempts.Keys.Where(key => !currentSet.Contains(key)).ToList())
+            _extractAttempts.Remove(key);
+
         return newKeys;
     }
+
+    /// <summary>
+    /// After a failed read: forgets the key so the next snapshot reports it as new again, unless it was
+    /// already tried <see cref="MaxExtractAttempts"/> times (then it stays handled). Returns true when a retry is scheduled.
+    /// </summary>
+    public bool TryScheduleRetry(WinRtNotificationKey key)
+    {
+        var attempts = _extractAttempts.TryGetValue(key, out var count) ? count + 1 : 1;
+        if (attempts >= MaxExtractAttempts)
+        {
+            _extractAttempts.Remove(key);
+            return false;
+        }
+
+        _extractAttempts[key] = attempts;
+        _seen.Remove(key);
+        return true;
+    }
+
+    /// <summary>Drops the retry counter of a key that was finally forwarded or ignored.</summary>
+    public void ClearRetry(WinRtNotificationKey key) => _extractAttempts.Remove(key);
 
     public static WinRtAccessDecision EvaluateAccess(UserNotificationListenerAccessStatus status, bool currentlyRevoked)
     {

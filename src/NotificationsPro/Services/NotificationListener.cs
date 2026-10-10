@@ -378,8 +378,7 @@ public class NotificationListener
                 for (var i = 0; i < notifications.Count; i++)
                 {
                     if (!newKeySet.Remove(keys[i])) continue;
-                    _capturedCount++;
-                    ExtractAndForwardWinRT(notifications[i]);
+                    HandleExtractResult(keys[i], ExtractAndForwardWinRT(notifications[i]));
                 }
             }
 
@@ -435,10 +434,10 @@ public class NotificationListener
             if (notification == null) return;
 
             // Same key as the poll path, so an event and a poll report are handled once.
-            if (!_pollTracker.TryMarkSeen(CreateTrackerKey(notification))) return;
+            var key = CreateTrackerKey(notification);
+            if (!_pollTracker.TryMarkSeen(key)) return;
 
-            _capturedCount++;
-            ExtractAndForwardWinRT(notification);
+            HandleExtractResult(key, ExtractAndForwardWinRT(notification));
         }
         catch { }
     }
@@ -483,13 +482,38 @@ public class NotificationListener
         return $"{ex.GetType().Name} 0x{ex.HResult:X8}";
     }
 
-    private void ExtractAndForwardWinRT(UserNotification notification)
+    /// <summary>
+    /// A notification whose text could not be read yet (payload not populated, binding missing, read error)
+    /// is released from the handled set so the next poll tries again, up to
+    /// <see cref="WinRtPollTracker.MaxExtractAttempts"/> times. Forwarded and deliberately ignored
+    /// notifications stay handled.
+    /// </summary>
+    private void HandleExtractResult(WinRtNotificationKey key, WinRtExtractResult result)
     {
+        switch (result)
+        {
+            case WinRtExtractResult.Forwarded:
+                _capturedCount++;
+                _pollTracker.ClearRetry(key);
+                break;
+            case WinRtExtractResult.Retry:
+                _pollTracker.TryScheduleRetry(key);
+                break;
+            default:
+                _pollTracker.ClearRetry(key);
+                break;
+        }
+    }
+
+    private WinRtExtractResult ExtractAndForwardWinRT(UserNotification notification)
+    {
+        string appName;
+        (string AppName, string Title, string Body) fields;
         try
         {
             var toastBinding = notification.Notification.Visual.GetBinding(
                 KnownNotificationBindings.ToastGeneric);
-            if (toastBinding == null) return;
+            if (toastBinding == null) return WinRtExtractResult.Retry;
 
             var textElements = toastBinding.GetTextElements();
             var texts = textElements
@@ -499,12 +523,24 @@ public class NotificationListener
                 .ToList();
 
             var displayName = NormalizeText(TryReadAppDisplayName(notification) ?? string.Empty);
-            var fields = BuildNotificationFields(texts, displayName, assumeLeadingAppNameWhenUnknown: false);
+            fields = BuildNotificationFields(texts, displayName, assumeLeadingAppNameWhenUnknown: false);
+            if (string.IsNullOrWhiteSpace(fields.Title) && string.IsNullOrWhiteSpace(fields.Body))
+                return WinRtExtractResult.Retry; // text not populated yet
 
             // Unidentifiable senders (e.g. tray balloon tips) are forwarded as "Unknown" instead of being dropped.
-            var appName = string.IsNullOrWhiteSpace(fields.AppName) ? WinRtPollTracker.UnknownAppId : fields.AppName;
+            appName = string.IsNullOrWhiteSpace(fields.AppName) ? WinRtPollTracker.UnknownAppId : fields.AppName;
             if (ShouldIgnoreCapturedNotification(appName, fields.Title, fields.Body))
-                return;
+                return WinRtExtractResult.Ignored;
+        }
+        catch
+        {
+            return WinRtExtractResult.Retry;
+        }
+
+        // From here on the notification counts as handled even if forwarding throws: the queue may already
+        // have raised NotificationAccepted (sound), so a retry could play it twice.
+        try
+        {
 
             // Suppress the Windows toast popup before forwarding to the overlay so the system
             // toast has less chance to flash first. The notification payload has already been
@@ -520,6 +556,8 @@ public class NotificationListener
             _queueManager.AddNotification(appName, fields.Title, fields.Body, TryReadAppUserModelId(notification));
         }
         catch { }
+
+        return WinRtExtractResult.Forwarded;
     }
 
     // ========================
