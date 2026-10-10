@@ -19,6 +19,7 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
 {
     private const uint EVENT_OBJECT_DESTROY = 0x8001;
     private const uint EVENT_OBJECT_SHOW = 0x8002;
+    private const uint EVENT_OBJECT_HIDE = 0x8003;
     private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
     private const uint WINEVENT_SKIPOWNPROCESS = 0x0002;
     private const int OBJID_WINDOW = 0;
@@ -49,7 +50,15 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
     [StructLayout(LayoutKind.Sequential)]
     private struct RECT { public int L, T, R, B; }
 
-    private readonly HashSet<IntPtr> _reported = new();
+    // At the moment of EVENT_OBJECT_SHOW the popup may not have its final size/position yet, so a
+    // rejected popup-class window is looked at again after these delays.
+    private static readonly int[] RecheckDelaysMs = { 150, 500, 1200 };
+
+    // A window that is hidden and shown again counts again, but not within this time (animation frames).
+    private static readonly TimeSpan ReshowGuard = TimeSpan.FromSeconds(3);
+
+    private readonly Dictionary<IntPtr, DateTime> _reported = new();
+    private readonly HashSet<IntPtr> _rechecking = new();
     private readonly Dictionary<uint, string> _processNames = new();
     private WinEventProc? _proc;
     private IntPtr _hook;
@@ -66,13 +75,16 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
     public DateTime? LastDetectedAt { get; private set; }
     public string? StartError { get; private set; }
 
+    /// <summary>Why the last popup-class KakaoTalk window was not counted (diagnostics, no content).</summary>
+    public string? LastRejectReason { get; private set; }
+
     public void Start()
     {
         if (_disposed || IsRunning)
             return;
 
         _proc = OnWinEvent;
-        _hook = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_SHOW, IntPtr.Zero, _proc, 0, 0,
+        _hook = SetWinEventHook(EVENT_OBJECT_DESTROY, EVENT_OBJECT_HIDE, IntPtr.Zero, _proc, 0, 0,
             WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNPROCESS);
         StartError = _hook == IntPtr.Zero ? $"SetWinEventHook failed (0x{Marshal.GetLastWin32Error():X8})" : null;
         StateChanged?.Invoke();
@@ -87,6 +99,7 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
         }
 
         _reported.Clear();
+        _rechecking.Clear();
         _processNames.Clear();
         StateChanged?.Invoke();
     }
@@ -106,10 +119,22 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
         if (evt == EVENT_OBJECT_DESTROY)
         {
             _reported.Remove(hwnd);
+            _rechecking.Remove(hwnd);
             return;
         }
 
-        if (evt != EVENT_OBJECT_SHOW || _reported.Contains(hwnd))
+        if (evt != EVENT_OBJECT_SHOW || IsRecentlyReported(hwnd))
+            return;
+
+        Inspect(hwnd, attempt: 0);
+    }
+
+    private bool IsRecentlyReported(IntPtr hwnd)
+        => _reported.TryGetValue(hwnd, out var at) && DateTime.Now - at < ReshowGuard;
+
+    private void Inspect(IntPtr hwnd, int attempt)
+    {
+        if (_hook == IntPtr.Zero || IsRecentlyReported(hwnd))
             return;
 
         try
@@ -123,10 +148,22 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
                 return;
 
             var facts = ReadFacts(hwnd, processName);
-            if (!KakaoPopupClassifier.IsMessagePopup(facts))
+            var reason = KakaoPopupClassifier.GetRejectReason(facts);
+            if (reason != null)
+            {
+                // Only the popup class is worth a second look; the main window and helpers never become popups.
+                if (string.Equals(facts.ClassName, KakaoPopupClassifier.PopupClassName, StringComparison.Ordinal)
+                    && !facts.HasOwner)
+                {
+                    LastRejectReason = reason;
+                    if (attempt < RecheckDelaysMs.Length && _rechecking.Add(hwnd))
+                        ScheduleRecheck(hwnd, attempt);
+                }
                 return;
+            }
 
-            _reported.Add(hwnd);
+            _rechecking.Remove(hwnd);
+            _reported[hwnd] = DateTime.Now;
             DetectedCount++;
             LastDetectedAt = DateTime.Now;
             StateChanged?.Invoke();
@@ -136,6 +173,20 @@ public sealed class KakaoTalkPopupWatcher : IDisposable
         {
             // A window can disappear while being inspected; ignore it.
         }
+    }
+
+    private void ScheduleRecheck(IntPtr hwnd, int attempt)
+    {
+        var delay = attempt == 0 ? RecheckDelaysMs[0] : RecheckDelaysMs[attempt] - RecheckDelaysMs[attempt - 1];
+        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(delay) };
+        timer.Tick += (_, _) =>
+        {
+            timer.Stop();
+            if (!_rechecking.Remove(hwnd))
+                return; // destroyed or stopped meanwhile
+            Inspect(hwnd, attempt + 1);
+        };
+        timer.Start();
     }
 
     private string GetProcessName(uint pid, out string? exePath)

@@ -83,6 +83,8 @@ public partial class App
                 : LocalizationManager.Get("Labs_KakaoNotRunning");
             var last = watcher.LastDetectedAt?.ToString("HH:mm:ss") ?? LocalizationManager.Get("Labs_KakaoNever");
             text = LocalizationManager.Format("Labs_KakaoStatusWatching", running, watcher.DetectedCount, last);
+            if (watcher.LastRejectReason != null)
+                text += Environment.NewLine + LocalizationManager.Format("Labs_KakaoLastReject", watcher.LastRejectReason);
         }
 
         _settingsViewModel.SetLabsKakaoStatus(text);

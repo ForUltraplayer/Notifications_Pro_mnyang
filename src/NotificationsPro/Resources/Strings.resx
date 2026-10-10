@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   @file Strings.resx
   @author: rudals252
@@ -3119,6 +3119,9 @@ Enable Session Archive in Settings &gt; System to keep captured notifications in
   </data>
   <data name="Labs_KakaoRunning" xml:space="preserve">
     <value>running</value>
+  </data>
+  <data name="Labs_KakaoLastReject" xml:space="preserve">
+    <value>Last skipped popup-like window: {0}</value>
   </data>
   <data name="Labs_KakaoStatusWatching" xml:space="preserve">
     <value>Watching. KakaoTalk: {0}. Detected this session: {1}. Last: {2}</value>

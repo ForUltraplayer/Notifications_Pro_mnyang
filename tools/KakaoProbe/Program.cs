@@ -17,6 +17,7 @@ internal static class Program
 {
     private const uint EVENT_OBJECT_CREATE = 0x8000;
     private const uint EVENT_OBJECT_SHOW = 0x8002;
+    private const uint EVENT_OBJECT_HIDE = 0x8003;
     private const uint EVENT_OBJECT_NAMECHANGE = 0x800C;
     private const uint WINEVENT_OUTOFCONTEXT = 0x0000;
     private const int OBJID_WINDOW = 0;
@@ -77,7 +78,7 @@ internal static class Program
     {
         if (hwnd == IntPtr.Zero || idObject != OBJID_WINDOW || idChild != 0)
             return;
-        if (evt != EVENT_OBJECT_SHOW && evt != EVENT_OBJECT_CREATE)
+        if (evt != EVENT_OBJECT_SHOW && evt != EVENT_OBJECT_CREATE && evt != EVENT_OBJECT_HIDE)
             return;
         if (GetAncestor(hwnd, 2) != hwnd) // GA_ROOT: top-level only
             return;
@@ -86,13 +87,21 @@ internal static class Program
 
         if (evt == EVENT_OBJECT_SHOW)
         {
+            // What the app's watcher sees: facts at the moment of the event, before layout settles.
+            Log("show-immediate", Describe(hwnd, includeTree: false));
             var first = Reported.Add(hwnd);
-            Thread.Sleep(400); // let the popup lay out its content
-            Log(first ? "show" : "show-again", Describe(hwnd, includeTree: true));
+            // Read again once the popup has laid out, without blocking later events.
+            var later = new System.Windows.Forms.Timer { Interval = 400 };
+            later.Tick += (_, _) =>
+            {
+                later.Dispose();
+                Log(first ? "show" : "show-again", Describe(hwnd, includeTree: false));
+            };
+            later.Start();
         }
         else
         {
-            Log("create", Describe(hwnd, includeTree: false));
+            Log(evt == EVENT_OBJECT_HIDE ? "hide" : "create", Describe(hwnd, includeTree: false));
         }
     }
 

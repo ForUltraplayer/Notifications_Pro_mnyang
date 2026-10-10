@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
   @file Strings.ko-KR.resx
   @author: rudals252
@@ -2364,6 +2364,9 @@ Notifications Pro는 보관함을 RAM에만 두고 앱을 닫으면 지웁니다
   </data>
   <data name="Labs_KakaoRunning" xml:space="preserve">
     <value>실행 중</value>
+  </data>
+  <data name="Labs_KakaoLastReject" xml:space="preserve">
+    <value>마지막으로 제외한 팝업 후보: {0}</value>
   </data>
   <data name="Labs_KakaoStatusWatching" xml:space="preserve">
     <value>감시 중. 카카오톡: {0}. 이번 실행에서 감지: {1}회. 마지막 감지: {2}</value>
