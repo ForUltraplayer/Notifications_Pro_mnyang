@@ -12,6 +12,8 @@
     <RootNamespace>NotificationsPro</RootNamespace>
     <AssemblyTitle>Notifications Pro KR-Mnyang</AssemblyTitle>
     <Product>Notifications Pro KR-Mnyang</Product>
+    <!-- exe icon from the original package image (scripts/custom/make-app-icon.ps1 regenerates app.ico). -->
+    <ApplicationIcon>app.ico</ApplicationIcon>
     <Description>Privacy-first Windows tray app that mirrors toast notifications into a customizable always-on-top overlay with smart filtering, optional narration, and per-app overrides</Description>
   </PropertyGroup>
   <ItemGroup>
