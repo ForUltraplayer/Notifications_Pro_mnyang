@@ -1,463 +1,259 @@
-<div align="center">
-  <img src="src/NotificationsPro.Package/Images/Square150x150Logo.png" alt="Notifications Pro Logo" width="120" />
-  
-  # Notifications Pro
+<!-- @file README.md -->
+<!-- @author: rudals252 -->
+<!-- @brief Notifications Pro KR-Mnyang(Notifications Pro 포크) 한국어 안내: 추가 기능, 원본 기능 요약, 설치·초기 설정·사용법, 제한, 개인정보, 빌드, 라이선스. 원본 영문 README는 README.upstream.md에 보존. -->
 
-  **A privacy-first, highly-customisable Windows notification overlay.**
-  
-  [![Platform](https://img.shields.io/badge/Platform-Windows_10%20%7C%2011-blue.svg)](#requirements)
-  [![Framework](https://img.shields.io/badge/Framework-.NET_8%20%7C%20WPF-purple.svg)](#build--run--test)
-  [![Privacy](https://img.shields.io/badge/Privacy-RAM--only%20by%20default-2f855a.svg)](#privacy--data-model)
-  [![Accessibility](https://img.shields.io/badge/Accessibility-Built--in%20support-0f766e.svg)](#accessibility)
+<div align="center">
+  <img src="src/NotificationsPro.Package/Images/Square150x150Logo.png" alt="Notifications Pro 로고" width="120" />
+
+  # Notifications Pro KR-Mnyang
+
+  **Windows 알림을 오버레이로 모아 보고, 앱마다 내가 만든 WAV로 알림음을 바꾸는 트레이 앱**
+
+  [![Platform](https://img.shields.io/badge/Platform-Windows_10%20%7C%2011-blue.svg)](#설치)
+  [![Framework](https://img.shields.io/badge/Framework-.NET_8%20%7C%20WPF-purple.svg)](#빌드테스트)
+  [![Language](https://img.shields.io/badge/UI-한국어%20%7C%20English-0f766e.svg)](#한국어영어-ui)
   [![License](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-  [![Status](https://img.shields.io/badge/Status-Active_Development-orange.svg)](docs/STATUS.md)
 </div>
 
 ---
 
-A privacy-first Windows tray app (C# .NET 8 + WPF) that captures native Windows toast notifications and mirrors them into a fully customisable, always-on-top overlay. It is especially useful on 4K, 5K, ultrawide, and multi-monitor setups where default Windows toasts are easy to miss. Filter noise, style cards per app, narrate only the alerts that matter, and keep notification text RAM-only by default. If you explicitly enable Session Archive, Notifications Pro also keeps a temporary in-memory archive for the current app session so you can review or copy recent captured notifications; it is never written to disk and is cleared when the app closes.
+[Notifications Pro](https://github.com/lwytch/Notifications-Pro)(Liam Wytcherley, GPL-3.0-or-later) `v1.1.10.37`을 바탕으로 rudals252가 수정한 포크입니다. 원본의 오버레이·필터·테마·낭독 기능은 그대로 유지했습니다. 여기에 **앱별 WAV 알림음, 한국어 UI, 로그온 자동 실행, 오버레이 조작 기능**을 더했습니다.
 
-> Still in active development. I use it every day. More updates coming.
+캐릭터 TTS로 만든 음성 파일을 ChatGPT·Claude·Discord 같은 앱의 알림음으로 쓰려고 만들었습니다. CMD나 JSON 편집 없이 설정창에서 모두 관리합니다.
 
-## Quick Start
+> 원본 Notifications Pro의 영문 README는 [README.upstream.md](README.upstream.md)에 그대로 보존했습니다. 이 수정본은 원저작자가 만들거나 보증한 것이 아닙니다.
 
-1. Download the latest **`.msix`** package and matching **`.cer`** certificate from [GitHub Releases](https://github.com/lwytch/Notifications-Pro/releases).
-2. Install the certificate only if you trust the release and want Windows to trust that package signature, then install the `.msix`.
-3. Launch Notifications Pro and grant Windows notification access when prompted.
-4. If live notifications still do not appear, open `Settings > System > Notification Access` and use `Retry Access Check` or switch `Capture Mode` to `Force Accessibility`.
+## 목차
 
-## Why Notifications Pro Instead of Default Windows Notifications?
-
-| Default Windows notifications | Notifications Pro |
-|------------------------------|-------------------|
-| Small transient toasts that are easy to miss on 4K/5K/ultrawide displays | A resizable always-on-top overlay you can place exactly where you want, including a dedicated side monitor |
-| One-size-fits-all presentation | Per-app icons, sounds, card backgrounds, typography, timestamps, density, and grouping controls |
-| Limited control over what breaks focus | App mute, field-scoped rules, app-filtered rules, deduplication, quiet hours, burst protection, and focus mode |
-| No dedicated notification workspace | Put notifications on any monitor, use a fullscreen backdrop on a spare display, or pin the overlay to a consistent corner |
-| Basic speech/accessibility control | Built-in narration, per-app read aloud, rule-gated speech, Voice Access labels, auto-duration, and accessibility-aware styling |
-| System decides when to dismiss toasts | Persistent cards, auto-duration, hover-to-pause, and explicit visible-card limits |
-| Overflow and history behavior are opaque | RAM-only visible cards, overflow count only, and no disk history of notification content by default |
-
-Notifications Pro is built for people who need more control than Windows offers out of the box: developers watching builds and reviews, social/community managers tracking mentions, streamers keeping alerts readable on a second screen, and anyone using a high-resolution desktop where standard toasts disappear too quickly or too far into the corner.
-
-## 🎯 Who is this for?
-
-| Role | Why You Need It |
-|------|-----------------|
-| **Streamers & Creators** | Read chat and alerts on a single monitor while maintaining full-screen gaming focus. Use OBS Chroma-key integration for seamless stream overlays. |
-| **Developers & Engineers** | Catch CI/CD build failures, PR reviews, or server alerts while deep in focus mode. Texts aren't truncated like default Windows toasts. |
-| **ADHD & Neurodivergent** | Never lose a thought. Persistent notifications ensure you decide when a reminder disappears, not an arbitrary 5-second timer. |
-| **Professionals** | Filter noise. Auto-mute Slack during meetings, but highlight "urgent" emails in red so you only break focus for emergencies. |
-| **Social & Community Managers** | Monitor brand mentions, DMs, and engagement across platforms like X (Twitter), Discord, and Reddit without drowning in browser tabs. |
+- [이 포크에서 추가·변경한 기능](#이-포크에서-추가변경한-기능)
+- [원본에서 이어받은 기능](#원본에서-이어받은-기능)
+- [설치](#설치)
+- [처음 설정](#처음-설정)
+- [오버레이 조작](#오버레이-조작)
+- [알려진 제한](#알려진-제한)
+- [개인정보와 저장 파일](#개인정보와-저장-파일)
+- [빌드·테스트](#빌드테스트)
+- [문서](#문서)
+- [라이선스·고지·면책](#라이선스고지면책)
 
 ---
 
-## Feature Overview
+## 이 포크에서 추가·변경한 기능
 
-### Notification Capture
-- **WinRT listener** (`UserNotificationListener`) — the primary capture path, requires a one-time permission grant via Windows Settings.
-- **Accessibility fallback** — uses `SetWinEventHook` + UI Automation to read toast text when the WinRT path is unavailable (e.g. unpackaged app restrictions). Simultaneous notifications are split into individual entries rather than merged.
-- **Capture mode selector** — `Settings > System > Notification Access` now offers `Auto`, `Prefer WinRT`, and `Force Accessibility` so you can recover quickly if live notifications stop flowing through the direct path.
-- **Polling guard** — a 2-second polling loop supplements the event-driven path for reliability; a flag prevents overlapping polls.
-- **Toast suppression** (optional) — after capturing a notification, the app can remove the native Windows toast popup so only the overlay shows. The WinRT path now attempts removal before the overlay card is queued to reduce visible flashing, and Notifications Pro ignores its own startup/self toasts so suppression does not bounce the app’s tray balloon back into the overlay. Requires the WinRT path. Off by default.
+### 앱별 WAV 알림음
 
-### Overlay Window
-- Always-on-top, transparent, borderless — sits over any application.
-- **Click-through mode** — overlay is visually present but all mouse events pass through to whatever is beneath.
-- **Drag anywhere** — click and drag the overlay to reposition. Right-click a notification card for a context menu (dismiss, copy text, clear all, mute app).
-- **Click-to-dismiss** — left-click a card to remove it.
-- **Hover-to-pause** — hovering over the overlay pauses all expiry timers so you can finish reading before cards disappear.
-- **Multi-monitor support** — place the overlay on any connected display; it remembers which monitor.
-- **Quick position + monitor move** — `Settings > Layout` can move the overlay directly to a selected monitor and snap it to common corners/edges without manual dragging.
-- **Edge snapping** — configurable snap distance; overlay aligns to screen edges when dragged nearby.
-- **Manual resize** — drag the left or right edge of the overlay to change its width. Resize anchors to the edge it is near so right-aligned overlays do not jump.
-- **Fullscreen overlay mode** — expands the overlay to cover an entire monitor with a configurable semi-transparent backdrop (solid colour or local image, with opacity and fit controls). Useful as a dedicated notification monitor or for focus sessions.
-- **OBS fixed-window mode** — locks the overlay to a precise width/height for predictable window-capture in OBS/streaming tools.
+- **소리 보관함.** WAV 파일을 가져오거나(관리 폴더로 복사) 이 PC의 로컬 폴더를 참조로 등록합니다. 파일마다 실제 재생 엔진으로 검사해서 사용 가능·결손·미지원 상태와 길이를 보여 줍니다. 미리 듣기와 중지가 있습니다.
+- **기본 규칙과 앱별 규칙.** 앱마다 `기본값 상속 / 이 앱 무음 / 이 앱 전용 목록` 중 하나를 고릅니다. 목록은 여러 파일을 넣고 순서를 바꿀 수 있습니다.
+- **재생 방식.** `단일`(첫 번째 파일), `랜덤`(같은 파일 연속 재생 방지 선택), `순차`(목록 순서대로 순환) 중에서 고릅니다.
+- **재생 조정.** 소리는 한 번에 하나만 재생하고, 낭독·미리 듣기와도 겹치지 않습니다. 앱별 최소 간격, 대기열 크기·대기 시간, 초과 시 대기/생략을 설정합니다.
+- **재생 기준.** `화면 수용 기준`(오버레이에 표시된 알림만)과 `정책 통과 기준`(필터를 통과한 알림이면 표시 수 초과여도 재생) 중에서 고릅니다.
+- **트레이 메뉴.** `재생 중지`, `기본 소리 미리 듣기`가 추가됐습니다.
 
-### Layout Modes
-- **Stacked cards** — each notification is a separate card, and the optional scrollbar applies when the currently visible cards need more vertical space.
-- **Single-line banner mode** — a compact banner-style layout. Keep each notification to one line, or allow wrapping up to a configurable max-line count. Timestamps can render inline when enabled.
-- **Replace mode** — globally available text-replacement rendering that works across all layout modes.
-- **Text alignment** — choose Left / Center / Right alignment for stacked cards, wrapped banner cards, and the live preview.
-- **Newest-on-top** toggle — controls whether new notifications appear at the top or bottom.
-- **Retained notifications** — configurable 1–1000 retained cards, with new installs/reset defaults now starting at `40`. Extra notifications increment a `+N not shown` summary instead of being retained, and clicking that summary can raise the limit for future cards. The themed scrollbar is enabled by default for fresh installs but only appears when the retained cards overflow the overlay height; it does not resurrect discarded overflow items.
-- **Max overlay height** — the overlay expands vertically up to this limit, then shows a scrollbar. Clamped to the active monitor work area.
-- **Width / height presets** — quick buttons for 1080p / 2K / 4K / 8K display sizes.
+### 한국어/영어 UI
 
-### Appearance & Theming
-- **Built-in theme presets** — select from a dropdown and apply in one click.
-- **Custom themes** — save your current overlay look by name; re-apply or delete any time.
-- **Import / export** — share a complete settings profile as a JSON file. Filtering rules, settings-window theme state, settings-window display mode, and compact-window mode round-trip cleanly, while managed custom assets are stored as relative Notifications Pro references instead of machine-specific absolute paths.
-- **Named profiles** — save, load, and delete full profile snapshots from the Profiles tab or tray menu, including filtering rules, settings-window styling, popup/window behavior, and the same portable managed-asset references used by settings export/import.
-- **Typography** — independently configure font family, size, and weight for app name, title, and body text. Line spacing control.
-- **Timestamps** — optional per-card timestamps in Relative (`2m ago`), Time (`14:35`), or DateTime format, with independent size, weight, and colour.
-- **Colours** — independent hex colours for title, app name, body text, background, and accent stripe.
-- **Background opacity** — from fully opaque to near-transparent.
-- **Card background images** — optional local image per stacked notification card with explicit `Solid / Image` mode plus opacity, hue, brightness, saturation, contrast, black-and-white, fit, coverage, and vertical-focus controls. You can keep the image inside the padded content area or let it span the full card, while the normal background colour remains the fallback base.
-- **Card shape** — corner radius, internal padding, card gap, outer margin.
-- **Grouping appearance** — grouped notifications can render as a `Framed Group`, `Header Chip`, or `Minimal Label`, with optional per-group counts, while reusing the normal accent/border/text styling controls.
-- **Accent stripe** — 3 px coloured bar on the left edge of each card.
-- **Optional border** — thin border around each card, configurable colour and thickness.
-- **Highlight styling** — matched highlight rules can add configurable tint opacity, explicit highlight border width, choose a full border / accent-side-only / no-border frame, optionally play `Flash`, `Pulse`, or `Shake`, and individual highlight rules can override those treatments directly from `Settings > Filtering`. `Send Highlight Preview` lets you verify the current highlight styling locally without waiting for a real toast.
-- **Per-app tint** — subtle colour tint on each card based on the source app name.
-- **Icons** — optional per-app icons using 10 built-in vector presets (Bell, Megaphone, Star, Warning, Info, Heart, Lightning, Fire, Chat, Checkmark) or your own image files. Icon size configurable 16–48 px.
-- **Dyslexia-friendly font** — bundled OpenDyslexic typeface with one-click preset buttons in `Appearance > Typography`. It is packaged as an app-local Notifications Pro resource rather than installed into Windows system fonts. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-- **Apps tab overrides** — assign per-app `Read aloud`, sound, icon, and card-background overrides once Notifications Pro has seen that app, with app search, `Only modified`, and one-click reset.
-- **Apps tab stability** — per-app override controls now bind directly to the settings window, avoiding the repeated WPF popup-binding errors that could appear when opening the `Apps` tab.
-- **Chroma key** — solid-colour background (green / blue / magenta / custom) for OBS chroma-key filtering.
-- **Information density presets** — Compact / Comfortable / Spacious — adjusts typography, spacing, and line limits in one click from the `Appearance` tab.
+- 설정창 전체, 오버레이, 트레이 메뉴, 대화상자, 상태 문구, 접근성 이름을 한국어와 영어로 제공합니다.
+- `시스템` 탭에서 `한국어 / English / OS 기본값`을 고르고, 바로 적용됩니다. 새로 설치하면 Windows 표시 언어를 따릅니다.
+- 앱 이름, 프로필 이름, 파일 이름, 알림 원문은 번역하지 않습니다.
 
-### Behaviour & Control
-- **Notification duration** — configurable display time in seconds; each card has its own timer.
-- **App grouping** — optional grouping by source app, with a separate appearance control so the grouping behaviour lives in `Behavior` and the styling lives in `Appearance`.
-- **Persistent notifications** — disable auto-expiry; cards stay until manually dismissed.
-- **Auto-duration** — extends display time based on notification length (configurable base seconds + seconds-per-line).
-- **Animations** — choose from `Slide + Fade`, `Slide`, `Fade`, `Drift + Fade`, `Zoom + Fade`, or `Pop`; directional styles still respect Left / Right / Top / Bottom, duration is configurable up to `1200ms`, and motion easing can use `EaseOut`, `Bounce`, `Elastic`, or `Linear`.
-- **Deduplication** — suppress identical notifications within a configurable time window.
-- **Quiet hours** — block all notifications between configurable start/end times (supports overnight ranges).
-- **Burst protection** — cap the number of notifications accepted in a sliding time window to avoid floods.
-- **Always-on-top** — toggle without restarting; also available from the tray menu.
+### 오버레이 조작
 
-### Filtering & Smart Control
-- **Per-app mute** — silence notifications from specific apps. Muted-app choices are saved in settings, and the Settings UI also shows apps seen this session for quick management.
-- **Field-scoped keyword rules** — highlight or mute rules can target `Title Only`, `Body Only`, or `Title + Body`, with optional regex matching.
-- **App-filtered rules** — highlight, mute, and narration rules can be limited to a specific app name such as `X`, `Outlook`, `Slack`, `Codex`, or `Antigravity`.
-- **Editable rule cards** — highlight, mute, and narration rules can all be edited in place after creation, and the Filtering tab now keeps those editors in a compact-friendly single-column layout instead of squeezed multi-column rows.
-- **Narration rules** — optional read-aloud overrides can force `Read Aloud` or `Skip Read Aloud` for matching notifications, with an optional spoken-content override and a mirrored `Only speak matching rules` toggle in `Settings > Filtering`.
-- **Local highlight preview** — `Settings > Filtering > Send Highlight Preview` injects a local highlighted test card so you can verify tint, border, and animation changes immediately.
-- **Focus mode** — a timed DND period (configurable minutes) accessible from the tray menu.
-- **Presentation mode** — auto-DND when a configured app (PowerPoint, Zoom, Teams, etc.) goes fullscreen.
+- **카드를 더블클릭하면 앱 열기**(기본 끔). 알림을 보낸 앱을 열거나 앞으로 가져옵니다. 카드 우클릭 메뉴의 `앱 열기`는 설정과 상관없이 항상 쓸 수 있습니다.
+- **앱을 연 뒤 카드 닫기**(기본 켬).
+- **오버레이 위치 고정**(기본 끔). 끌어도 움직이지 않고 크기도 바뀌지 않습니다. 클릭 통과 모드와 달리 클릭·더블클릭·우클릭·스크롤은 그대로 동작합니다.
+- **위치 기억.** 끌어서 옮긴 위치를 드래그가 끝나는 순간과 Windows 종료 때 저장합니다. 원본에서는 다시 시작하면 위치가 기본 자리로 돌아가는 문제가 있었습니다.
 
-### Sounds
-- **Master toggle** for notification sounds.
-- **Windows sound list** — Notifications Pro enumerates the Windows sound events currently exposed in the registry, deduplicated by WAV path, so you can pick from the sounds your machine actually exposes instead of a hardcoded short list.
-  > Note: Windows 11 unified many system sound events, so some choices may still produce the same audio. For distinct sounds use a custom WAV file.
-- **Custom WAV files** — browse for any `.wav` file; stored under `%AppData%\NotificationsPro\sounds\`.
-- **Per-app overrides** — assign a different sound to each app. Imported settings and saved profiles now trust only Windows system sounds or files inside Notifications Pro’s managed sounds folder.
-- **Test button** — play the current default sound immediately.
+### 상주·자동 실행
 
-### System Integration
-- **Start with Windows** — enables/disables the packaged Windows Startup Task for Notifications Pro.
-- **Notification access recovery** — the System tab shows current capture status, includes buttons to open Windows notification access, retry the direct WinRT access check, and run a capture diagnostic, and exposes `Auto`, `Prefer WinRT`, and `Force Accessibility` capture modes.
-- **Session archive** — optional, off by default, and still RAM-only. When enabled, Notifications Pro keeps a temporary in-memory list of captured notifications for the current app session so you can review them in Settings or use the explicit copy actions in Settings and the tray menu to send them to the Windows clipboard. Notifications Pro does not save that archive to files or databases, and clears it when the app closes.
-- **About dialog** — tray menu About shows the installed version, package identity, listener mode/status, runtime version, and project link.
-- **Tray quick actions** — the tray menu can show/hide the overlay, pause notifications, toggle always-on-top / click-through, start focus mode, clear all, quick mute seen apps, and switch saved themes or profiles.
-- **Tray listener health** — tray tooltip surfaces the active listener mode plus current status details for faster troubleshooting.
-- **Global hotkeys** — register system-wide keyboard shortcuts for: toggle overlay visibility, dismiss all notifications, toggle Do Not Disturb.
-- **Settings undo/redo** — Ctrl+Z and Ctrl+Y with a 50-entry history stack, plus undo/redo buttons in the settings header.
-- **Settings window theming** — Dark / Light / System / any named overlay theme. Colours are fully customisable (background, surface, text, accent, border), and you can link the overlay theme and settings-window theme when you want both to move together.
-- **Settings popup mode** — settings window can open as a normal resizable window or as a popup shell, with optional auto-close, a compact-width layout, and remembered placement so live setting changes do not yank it back to the primary display.
-- **Quick tips toggle** — `Settings > Settings Window` can turn the first-run guidance banner on or off without affecting notification capture.
+- **Windows 로그인 시 자동 실행.** 작업 스케줄러 작업(`NotificationsProKR-Mnyang-Logon`)으로 등록하고, 관리자 권한은 필요 없습니다. `시스템` 탭에서 상태(등록됨·비활성·미등록·정책 차단·확인 실패)를 보여 줍니다. 사용자가 Windows에서 끈 작업은 다른 방법으로 우회하지 않습니다.
+- **트레이로 시작**(기본 켬). 첫 실행에만 설정창을 엽니다.
+- **비정상 종료 안내.** 이전 실행이 정상적으로 끝나지 않았으면 다음 시작 때 알려 줍니다. 자동 재시작은 하지 않습니다.
+- **단일 인스턴스.** 두 번째로 실행하면 실행 중인 앱의 설정창을 엽니다. 명령줄 인자가 있으면 실행 중인 앱에 전달합니다.
 
-### Accessibility
-- **Accessibility mode** toggle — enables persistent notifications + system motion/contrast/text-scaling respect in one click.
-- **Respect Reduce Motion** — disables slide animations when Windows "Reduce Motion" is active.
-- **Respect High Contrast** — adapts overlay colours when Windows High Contrast is active.
-- **Respect Text Scaling** — scales notification text with the Windows text-size accessibility setting.
-- **Auto-duration** — longer notifications stay visible longer so there is time to read them.
-- **Spoken notifications** — built-in narration can read multiple title/body/timestamp combinations, using every voice Windows currently exposes to Notifications Pro through its app and desktop speech APIs, with adjustable speed, volume, preview, explicit trigger mode, a mirrored `Only speak matching rules` toggle in `Filtering`, and per-app `Read aloud` checkboxes in `Settings > Apps`. Each visible card is spoken once, so newly arriving cards do not replay cards that already finished speaking.
-- **Microsoft Voice Access labels** — choose `Off`, `Body Only`, or `Title + Body + Timestamp` for the card-level UI Automation label used by Voice Access and similar assistive tools.
-- **Keyboard navigation** — Alt-key mnemonics for every settings tab, Escape to close, and full tab-cycle navigation across all controls.
-- **Scrollable overlay** — when visible cards exceed the max height, a clickable themed scrollbar keeps those visible cards readable without giving up drag-anywhere behavior on the rest of the overlay. It stays hidden while the idle `Waiting for notifications...` placeholder is showing.
-- **Overlay scrollbar customisation** — show/hide scrollbar, configurable width, opacity, track/thumb colours, inset padding, card-to-scrollbar gap, and corner radius, all carried by overlay themes.
-- **Bundled accessibility font notice** — OpenDyslexic is included only for Notifications Pro itself and is not registered system-wide. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for attribution and license details.
+### 수신 안정성
 
-### Automation & Scheduling
-- **CLI arguments** — `--pause`, `--resume`, `--theme <name>`, `--send-test`, `--hide`, and `--show` can control the app from shortcuts or scripts.
-- **Theme scheduling** — automatically switch between day/night themes on a configured schedule.
+- **패키지 없이 실행.** 일반 실행 파일(MSIX 아님)로 동작합니다. Windows가 이벤트 구독을 막는 환경이라 1초 주기 조회로 알림을 받습니다.
+- **재시도.** 처음 조회할 때 내용을 읽지 못한 알림은 최대 3번까지 다시 시도합니다.
+- **권한 철회 감지.** 알림 접근 권한을 끄면 "새 알림 없음"으로 착각하지 않고 상태를 표시합니다.
+- **앱 ID 구분.** Windows 앱 ID(AUMID)로 앱을 구분합니다. 같은 이름에 여러 ID가 보이면 규칙을 어느 쪽에 걸지 고를 수 있습니다.
+
+### 원래 알림음 처리 안내
+
+- `앱` 탭에서 앱 종류(Windows 알림 앱·Discord·카카오톡·미확인)에 맞춰 원래 소리를 끄는 위치를 안내하고, Windows 알림 설정을 바로 여는 버튼을 제공합니다.
+- 직접 끈 뒤 `사용자 확인 완료`로 표시해 둘 수 있습니다. 앱이 검증한 결과가 아니라 사용자가 남긴 기록입니다.
+
+### 설정·데이터
+
+- **원본 설정 가져오기.** `프로필` 탭의 `원본 앱에서 가져오기`로 원본의 설정·테마·프로필·자산을 복사해 옵니다. 원본 파일은 바꾸지 않고, 기존 포크 설정은 먼저 백업합니다.
+- **안전 저장.** 임시 파일에 먼저 쓴 뒤 교체합니다. 손상된 설정 파일은 덮어쓰기 전에 보존하고, 더 새 버전이 쓴 설정은 읽기 전용으로 엽니다.
+- **저장 실패 표시.** 저장에 실패하면 `저장됨` 대신 경고를 표시합니다.
+- **이 PC 전용 값.** 언어, 외부 소리 폴더, 원래 소리 확인 기록, 트레이로 시작은 프로필·내보내기로 다른 PC에 옮겨 가지 않습니다.
+
+### 원본과 함께 설치
+
+실행 파일·데이터 폴더·앱 ID·중복 실행 방지 이름을 원본과 다르게 해서, 원본 Notifications Pro와 같은 PC에 함께 설치할 수 있습니다. 다만 둘 다 켜면 오버레이가 두 개 뜹니다.
+
+### 원본에서 고친 문제
+
+- 전역 단축키 설정을 바꾸면 오버레이 창이 손상되던 문제
+- 설정 실행 취소 기록이 50개를 넘으면 순서가 거꾸로 되던 문제
+- 표시 시간 값이 잘못 들어가면 알림이 사라지던 문제
+- 설정창 탭 내용이 화면 낭독기·UI 자동화에 보이지 않던 문제
+- 앱별 소리에서 "None"을 골라도 실제로는 기본 소리가 나던 문제(이제 `이 앱 무음`으로 정확히 동작)
+- 실행 파일에 아이콘이 없던 문제(원본 로고 사용)
+
+단계별 상세 이력은 [`docs/custom/CHANGELOG-fork.md`](docs/custom/CHANGELOG-fork.md)에 있습니다.
 
 ---
 
-## Common Use Cases
+## 원본에서 이어받은 기능
 
-### Streaming / OBS
-Keep notifications readable on-stream without disrupting your layout:
-1. Settings > Streaming — enable **Chroma Key**, pick a key colour (Green / Blue / Magenta).
-2. Settings > Streaming — enable **OBS Fixed Window Mode**, then set width and height to match your capture dimensions.
-3. In OBS, add a **Window Capture** source for the overlay, then add a **Chroma Key** filter using the matching colour.
-4. Use **Per-app icons** and **Per-app tint** so viewers can instantly identify which app each notification is from.
+- **오버레이.** 항상 위·투명·테두리 없는 창, 여러 모니터, 가장자리 자석, 너비 조절, 전체 화면 배경 모드, OBS 고정 크기 모드와 크로마키.
+- **레이아웃.** 카드 쌓기, 한 줄 배너, 교체 모드, 정렬, 최신 위/아래, 표시 개수 제한(넘친 알림은 개수만 표시).
+- **꾸미기.** 테마 프리셋·사용자 테마, 글꼴·색·투명도, 카드 배경 이미지, 앱별 아이콘·색, 강조 효과, 정보 밀도 프리셋, 난독증 친화 글꼴(OpenDyslexic).
+- **동작.** 표시 시간, 계속 표시, 길이에 따른 자동 시간, 애니메이션, 앱별 묶기, 중복 제거, 조용한 시간, 폭주 방지, 마우스를 올리면 만료 멈춤.
+- **필터.** 앱 음소거, 제목/본문 범위 키워드·정규식 규칙(강조·음소거·낭독), 집중 모드, 발표 모드.
+- **접근성.** 내장 낭독(Windows 음성), 앱별 소리 내어 읽기, Voice Access 레이블, 동작 줄이기·고대비·텍스트 크기 반영, 키보드 탐색.
+- **기타.** 프로필·내보내기/가져오기, 주야간 테마 자동 전환, 세션 보관함(기본 끔, 메모리에만 보관), 전역 단축키, 실행 취소/다시 실행, 명령줄 인자.
 
-### Presenting / Meetings
-Avoid distraction without missing urgent messages:
-- Enable **Presentation Mode** — the app auto-pauses notifications when PowerPoint, Zoom, Teams, or any configured app goes fullscreen.
-- Use **Quiet Hours** to block notifications during scheduled meeting blocks.
-- Use **Keyword highlight** so words like "urgent" or "fire" still break through even in focus mode.
-
-### Gaming / Fullscreen Apps
-- Enable **Click-through** so the overlay never steals focus mid-game.
-- Use **Per-app mute** to silence low-priority apps while keeping alerts from important ones.
-- Position the overlay in a corner that does not overlap your HUD.
-- Use **Single-line banner mode** with a wide overlay for minimal screen real-estate.
-
-### Accessibility & Readability
-- Enable **Accessibility Mode** for a sensible bundle of defaults (persistent cards, motion/contrast/scaling respect).
-- Increase body/title font size for large monitors or vision needs.
-- Use **Auto-duration** so you are never rushed to read a long notification.
-- Enable **Density: Spacious** for larger tap targets and more breathing room between elements.
-- Turn on **Settings > Accessibility > Read Notifications Aloud** if you want Notifications Pro itself to narrate incoming notifications.
-- Use **Timestamps** in DateTime mode to track when notifications arrived.
-- Use **Settings > Accessibility > Microsoft Voice Access** to expose either a generic card label, the notification body only, or the title + body + timestamp through Windows accessibility APIs.
-
-### Monitoring & Alerts
-- Set up **Keyword highlight** for terms like `failed`, `down`, `critical`, `error`, `urgent`.
-- Enable **Sounds** for specific apps (e.g., a monitoring tool) while keeping others silent.
-- Use **Burst limiting** so a flood of alerts from a runaway process does not bury the overlay.
-- Set **Retained Notifications** high and **Duration** long so alerts accumulate until acknowledged.
-- Use **Persistent Notifications** for critical alerts that must not auto-expire.
-
-### Daily Communications (Teams / Slack / Discord / Outlook)
-- Long chat messages, email previews, and calendar reminders display in full — no truncation.
-- Use **Per-app mute** to silence low-signal channels at certain times.
-- Right-click a card to copy the full notification text to the clipboard.
-- Use **Deduplication** to suppress rapid-fire duplicate messages from chatty threads.
-
-### Social Media & Community Management (X / Reddit / Instagram)
-- Track mentions, replies, and DMs without keeping heavy browser tabs open or switching contexts.
-- Use **Keyword highlight** for your brand name or specific campaign hashtags so you never miss an important engagement.
-- Use **Deduplication** and **Burst limiting** to filter out rapid-fire "liked your post" storms while keeping meaningful comments visible.
-- Keep the overlay tucked in the corner of your screen to passively monitor community health while working on other tasks.
+각 기능의 자세한 설명은 [README.upstream.md](README.upstream.md)를 보세요(영문).
 
 ---
 
-## Workflow Guides
+## 설치
 
-### Getting the Most Out of Notifications Pro
-- Start with `Settings > System > Notification Access` and keep `Capture Mode` on `Auto` unless live notifications stop appearing. If preview notifications work but real ones do not, switch to `Force Accessibility`.
-- Use `Settings > Filtering` for targeting logic, `Settings > Apps` for per-app presentation overrides, `Settings > Accessibility` for voice/rate/output choices, and `Settings > Appearance` for how stacked cards look.
-- If you want the app itself to speak, turn on `Settings > Accessibility > Read Notifications Aloud`. Then use either `Settings > Accessibility > Narration Trigger` or `Settings > Filtering > Only speak matching rules` when speech should happen only for rule matches instead of for every allowed app.
-- Use `Settings > Filtering > Send Highlight Preview` whenever you adjust highlight tint, border mode, animation, or per-rule overrides and want to verify the look immediately.
-- Background images are local-only assets copied into Notifications Pro's backgrounds folder. Stacked cards can use fit and coverage controls, single-line banner mode stays solid-colour for readability, app-specific overrides live in `Settings > Apps`, and shared exports/profiles keep those managed assets as relative Notifications Pro references instead of leaking machine-specific absolute paths.
-- If browser-hosted services all look like one browser app, install those sites as browser apps/PWAs first so Windows can surface a cleaner app identity when the browser supports it.
+### 필요 환경
 
-### Getting the Most Out of X
-- Browser-hosted X notifications usually surface as plain Windows notification text: `AppName`, `Title`, and `Body`. Notifications Pro does not receive structured account IDs or post metadata from X itself.
-- If X is arriving as a generic browser host, install it as a browser app/PWA first. Chrome’s desktop app flow is here: [Install or manage apps in Chrome](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en). Edge also supports installable apps here: [Install as app from Microsoft Edge](https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps-chromium/how-to/install). In practice, if X notifications are inconsistent in Edge on your machine, Chrome remains the safer workflow.
-- Use `Settings > Filtering > Highlight Rules` with `Match Scope` set to `Title Only` or `Body Only` depending on where the account name or watchword usually appears in your Windows notifications.
-- Use literal keywords like `@openai`, `@nvidia`, or a campaign hashtag when the text is stable. Turn on `.*` only when you really need regex patterns.
-- Add `App Filter = X` if you want X-specific rules without affecting Outlook, Reddit, Slack, or other notification sources using similar words.
-- Use `Settings > Filtering > Narration Rules` if only certain handles, phrases, or alerts should be spoken aloud while the rest of X stays visual-only. If speech should happen only for those matches, turn on `Only speak matching rules`.
+- Windows 10 또는 11 (x64)
+- [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (빌드할 때는 .NET 8 SDK)
 
-### Other Social Platforms
-- The same rule system works for Reddit, Instagram, Discord communities, and browser-hosted social tools, but the exact usable keywords depend on what Windows puts into the `Title` and `Body`.
-- For moderation or community work, use `Body Only` rules for phrases like `reported`, `reply`, `mention`, or a subreddit/community name, then add an app filter if the same phrase appears in unrelated apps.
-- Use per-app `Read aloud` checkboxes in `Settings > Apps` when an entire platform should stay silent, then add narration rules only for truly high-signal posts or messages.
-- When several services all arrive through the same browser host, rely on text patterns and app filters rather than assuming Notifications Pro can distinguish accounts structurally.
+설치 파일은 따로 배포하지 않습니다. 저장소에서 직접 빌드해 설치합니다. 관리자 권한은 필요 없습니다.
 
-### Common Notification-Heavy Tools
-- Tools like Codex, Antigravity, CI dashboards, repo alerts, and monitoring systems work best with field-scoped rules instead of broad global keywords. Match the exact repo name, environment name, or failure phrase where it usually appears.
-- Use `Title Only` rules for concise build/status subjects, `Body Only` rules for longer deployment or tool output phrases, and app filters when several tools share similar wording.
-- Pair highlight rules with the built-in narrator carefully: keep the global spoken toggle on only for the apps you routinely care about, then use narration rules to elevate truly urgent phrases.
-- If a tool is too noisy, mute it at the app level first, then reintroduce a small set of specific highlight or narration rules for the signals that matter.
+### 빌드하고 설치
+
+```powershell
+pwsh -File scripts\custom\publish.ps1
+pwsh -File scripts\custom\install.ps1
+```
+
+- `publish.ps1`은 `dist\NotificationsProKR-Mnyang\`에 실행 파일을 만듭니다. 라이선스 고지는 함께 넣고, 사용자 데이터는 넣지 않습니다.
+- `install.ps1`은 `%LocalAppData%\Programs\NotificationsProKR-Mnyang\`에 설치하고 시작 메뉴 바로가기 `Notifications Pro KR-Mnyang`을 만듭니다. 다시 실행하면 업데이트이고, 실행 중인 앱을 정상 종료한 뒤 덮어쓰고 예전 파일을 정리합니다. 설정과 WAV는 그대로 남습니다.
+- 실행은 시작 메뉴에서 합니다. 두 스크립트 모두 `-WhatIf`로 미리 볼 수 있습니다.
+
+### 제거
+
+```powershell
+pwsh -File scripts\custom\uninstall.ps1
+```
+
+앱을 정상 종료하고 로그온 작업을 해제한 뒤, 프로그램 폴더와 바로가기를 지웁니다. 설정·WAV는 남기며, `-RemoveData`를 붙이면 확인한 뒤 함께 지웁니다.
 
 ---
 
-## Why No Clickable Links or Images?
+## 처음 설정
 
-This is deliberate:
-- **Safety**: an always-on-top overlay with clickable URLs increases the risk of accidental clicks and phishing. URLs render as plain text only.
-- **Predictability**: Windows toasts can include action buttons and rich media. The overlay is intentionally passive (read / dismiss / copy) so behaviour is consistent across both the WinRT and accessibility capture paths.
-- **Privacy**: rendering images from notification payloads would require decoding potentially remote content.
+### Windows 알림 설정 (중요)
 
-Per-app icons are user-configured (built-in vector presets or your own files) and are never sourced from notification payloads.
+이 앱은 Windows가 받은 알림을 읽어 오는 방식입니다. 그래서 Windows 쪽 설정이 맞아야 동작합니다.
 
----
+1. **설정 > 시스템 > 알림**에서 `알림이 소리를 재생하도록 허용`을 **끕니다.** 모든 앱의 Windows 기본 알림음이 꺼지고 내가 정한 WAV만 들립니다.
+2. **설정 > 시스템 > 알림 > 각 앱**에서 다음처럼 둡니다.
 
-## Privacy & Data Model
+| 항목 | 설정 |
+|---|---|
+| 알림 (맨 위) | **켬** (끄면 아무것도 받지 못합니다) |
+| 알림 센터에서 알림 표시 | **켬** (끄면 받지 못합니다) |
+| 알림 배너 표시 | 끔 권장 (Windows 팝업이 오버레이와 겹치지 않음) |
+| 알림이 도착하면 소리 재생 | 끔 |
 
-Notifications Pro is designed to avoid persisting notification content:
-- **No notification title or body is ever written to disk** — no database, no cache, no logs of notification text.
-- Notification content exists only in RAM. By default, Notifications Pro keeps only the currently visible notifications on screen, releases each one after dismissal or expiry, and stores overflow as a count only. If you explicitly enable **Session Archive**, the app also keeps a temporary in-memory session list of captured notifications so you can review them or copy them while the app is running. Session Archive is off by default, is not saved by Notifications Pro to files or databases, and is cleared when the app closes.
-- Windows processes do not automatically share Notifications Pro's address space. However, sufficiently privileged local software, debuggers, or malware that can inspect this process while it is running could still read visible notification text from memory. RAM-only by default reduces persistence; it is not a claim against local machine compromise.
-- Using **Copy Text**, **Copy All to Clipboard**, or either Session Archive copy action hands the selected notification text to the Windows clipboard. Notifications Pro does not persist that text itself, but Windows clipboard history or third-party clipboard tools may retain copied text outside the app.
-- The app makes **no network calls** and includes **no telemetry**.
-- If **Spoken Notifications** is enabled, the text is spoken through your selected Windows audio output and may be audible to people nearby. Notifications Pro still keeps that text in RAM only and never saves spoken content to disk.
-- Visible notification text is available to Windows accessibility tools while on screen. The Voice Access setting controls the card-level UI Automation label only; it does not save or transmit the text.
+전역 `방해 금지`는 켜지 마세요. 알림이 조용히 알림 센터로만 들어가 헷갈릴 수 있습니다.
 
-Windows may keep notification history in the Action Center independently. The optional toast-suppression feature removes captured notifications from the Action Center; leave it off to preserve Windows default behaviour.
+### 앱 설정
 
-### Files Written
+1. **시스템 탭**: 언어를 고르고, `Windows 로그인 시 자동 실행`을 켭니다.
+2. **소리 탭**: `파일 가져오기`로 WAV를 넣고 체크해서 기본 소리 목록에 추가한 뒤 `기본 소리 미리 듣기`로 확인합니다.
+3. **앱 탭**: 특정 앱만 다른 소리나 무음으로 하려면 그 앱에서 `이 앱 전용 목록`이나 `이 앱 무음`을 고릅니다. 앱은 알림이 한 번 와야 목록에 나타납니다.
+4. **배치 탭**: 필요하면 `카드를 더블클릭하면 앱 열기`, `오버레이 위치 고정`을 켭니다.
 
-Under `%AppData%\NotificationsPro\`:
+트레이 툴팁에 `WinRT(1초 조회)`가 보이면 정상입니다. `이벤트: Failed COMException`은 Windows 제약 때문에 나오는 정상 표시입니다.
 
-| Path | Contents |
-|------|----------|
-| `settings.json` | App preferences and app-level overrides, including muted app names, but no notification title/body content |
-| `themes\*.json` | Named custom overlay themes |
-| `backgrounds\` | Optional user-provided background image files for cards and fullscreen backdrops |
-| `icons\` | Optional user-provided icon image files |
-| `sounds\` | Optional custom WAV files |
+기존 PowerShell 알림 스크립트에서 옮겨 오는 절차는 [`docs/custom/MIGRATION-ko.md`](docs/custom/MIGRATION-ko.md)에 있습니다.
 
 ---
 
-## Requirements
+## 오버레이 조작
 
-- Windows 10 or Windows 11
-- .NET 8 SDK (to build from source) or .NET 8 Runtime (to run a published build)
+| 동작 | 결과 |
+|---|---|
+| 카드 클릭 | 카드 닫기 |
+| 카드 더블클릭 | 그 앱 열기 (설정을 켰을 때) |
+| 카드 우클릭 | 메뉴: 닫기, 앱 열기, 텍스트 복사, 모두 지우기, 앱 음소거, 검색 등 |
+| 아무 곳이나 끌기 | 위치 이동 (위치 고정을 켜면 움직이지 않음) |
+| 왼쪽·오른쪽 가장자리 끌기 | 너비 조절 (`직접 크기 조절 허용`을 켰을 때) |
+| 마우스 올리기 | 모든 카드의 만료 타이머 멈춤 |
 
-## Build / Run / Test
+`클릭 통과 모드`를 켜면 위의 마우스 동작이 모두 막히고 클릭이 아래 창으로 전달됩니다. 위치만 고정하려면 `오버레이 위치 고정`을 쓰세요.
 
-```bash
-dotnet restore src/NotificationsPro/NotificationsPro.csproj
-dotnet restore tests/NotificationsPro.Tests/NotificationsPro.Tests.csproj
+**명령줄 인자:** `--pause`, `--resume`, `--theme <이름>`, `--send-test`, `--hide`, `--show`, `--quit`, `--start-minimized`. 앱이 이미 실행 중이면 그 앱에 전달됩니다.
+
+---
+
+## 알려진 제한
+
+- **특정 대화로는 이동하지 못합니다.** 더블클릭으로는 앱만 열립니다. Windows가 알림 클릭 정보를 다른 프로그램에 공개하지 않기 때문입니다. 해당 대화로 바로 가려면 `Win+N` 알림 센터에서 그 알림을 클릭하세요.
+- **ChatGPT와 Codex는 같은 앱으로 보입니다.** Windows에서 같은 앱 ID를 쓰기 때문에 규칙·확인 기록·앱 열기를 함께 씁니다.
+- **카카오톡은 받지 못할 수 있습니다.** Windows 알림이 아니라 자체 알림 창을 쓰기 때문입니다.
+- **Discord 자체 소리**는 Discord 설정(알림 > 소리)에서 직접 꺼야 합니다.
+- **자동 재시작은 없습니다.** 비정상 종료는 다음 시작 때 알려 줍니다.
+- **시작 전 알림은 소급하지 않습니다.** 조회 간격(1초) 사이에 생겼다 사라진 알림은 놓칠 수 있습니다.
+- **연속 알림의 소리를 생략하는 조건**이 있습니다. 같은 앱의 최소 간격(새로 설치하면 4초)과 중복 제거(2초)가 그 조건이고, 소리 탭·동작 탭에서 바꿀 수 있습니다.
+- **다른 PC에서는 검증하지 않았습니다.**
+
+---
+
+## 개인정보와 저장 파일
+
+- 알림 제목·본문은 **메모리에만** 두고 파일·로그·네트워크로 보내지 않습니다(원본과 같은 원칙). 네트워크 호출과 원격 분석이 없습니다.
+- 소리 재생 대기열에는 앱 이름·앱 ID·시각만 들어가고 본문은 들어가지 않습니다.
+- 저장 위치는 `%AppData%\NotificationsProKR-Mnyang\`입니다.
+
+| 경로 | 내용 |
+|---|---|
+| `settings.json` | 설정(앱 이름·규칙 포함, 알림 본문 없음) |
+| `themes\`, `profiles\` | 사용자 테마·프로필 |
+| `sounds\`, `icons\`, `backgrounds\` | 사용자가 넣은 WAV·아이콘·배경 이미지 |
+| `run-state.json` | 비정상 종료 확인용 표식(시작 시각·버전만) |
+
+저장소와 배포물에는 사용자 WAV·설정·알림 원문이 들어가지 않습니다. 캐릭터 음성 등 WAV의 권리는 이 소프트웨어 라이선스와 별개입니다.
+
+---
+
+## 빌드·테스트
+
+```powershell
 dotnet build src/NotificationsPro/NotificationsPro.csproj
-dotnet run --project src/NotificationsPro
 dotnet test tests/NotificationsPro.Tests/NotificationsPro.Tests.csproj
 ```
 
-## Publish (self-contained)
+테스트는 실제 `%AppData%` 대신 임시 폴더만 씁니다. 개발 빌드(`bin\Debug`)를 실행해 둔 상태면 출력 파일이 잠기니, 앱을 닫거나 `-p:OutDir=<다른 폴더>\`를 붙여 빌드하세요.
 
-```bash
-dotnet publish src/NotificationsPro -c Release -r win-x64 --self-contained
-```
+프로젝트 파일·네임스페이스는 원본 이름(`NotificationsPro`)을 유지해서 원본 수정 사항을 골라 반영하기 쉽게 했습니다. 원본 저장소는 `upstream` 리모트입니다.
 
 ---
 
-## Installation (MSIX)
+## 문서
 
-Notifications Pro is distributed as a native Windows App package (`.msix`). Because it relies on Windows package identity for the best notification-access behavior, the installer must be digitally signed. Current releases use a dedicated self-signed signing certificate for Notifications Pro.
-
-To install it for the first time:
-1. Download the matching **`.msix`** installer and **`.cer`** certificate from [GitHub Releases](https://github.com/lwytch/Notifications-Pro/releases).
-2. Review the release source and certificate details. Install the certificate only if you trust this release and want Windows to trust that package signature.
-   The public `.cer` may show subject `CN=LiamWytcherley`. That is the current package publisher / maintainer signing identity for Notifications Pro, and it is expected. The `.cer` contains only the public certificate used to verify the MSIX, not the private signing key.
-3. Right-click the `.cer` file, choose **Install Certificate**, and place it in **Trusted Root Certification Authorities**.
-4. If Windows still reports that the package signature is not trusted on your machine, import the same `.cer` into **Trusted People** as well, then retry the install.
-5. Double-click the `.msix` file to install Notifications Pro.
-
-> **Note on Windows Defender / SmartScreen:** 
-> New self-signed binaries may trigger SmartScreen, Defender, or other antivirus reputation checks. Review the release source, publisher, and certificate before bypassing a warning. If you need an antivirus exclusion, keep it narrowly scoped to `NotificationsPro.exe` rather than broad folders or trust-wide changes.
-> 
-> How you manage trust and exclusions on your machine is your decision. Keep any exceptions as narrow as possible and avoid broad allowlists when a specific per-app rule will do.
+- [`docs/custom/MIGRATION-ko.md`](docs/custom/MIGRATION-ko.md): 설치·전환 가이드와 확인 체크리스트
+- [`docs/custom/CHANGELOG-fork.md`](docs/custom/CHANGELOG-fork.md): 포크 변경 이력
+- [`docs/custom/README-fork.md`](docs/custom/README-fork.md): 개발자용 포크 요약(빌드·스크립트)
+- [`docs/custom/NOTICE-fork.md`](docs/custom/NOTICE-fork.md): GPL 수정 고지
+- `docs/custom/P0-…` ~ `P5-…`: 단계별 구현·검증 보고서
+- [README.upstream.md](README.upstream.md), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): 원본 문서(영문)
 
 ---
 
-## How To Use
+## 라이선스·고지·면책
 
-### Tray Icon
-Right-click the tray icon to access: show/hide overlay, pause (DND), always-on-top, click-through, focus mode timer, quick mute, theme quick-switch, profile quick-switch, clear all, open notification-access settings, retry access check, settings, quit.
-
-### Overlay Interaction
-| Action | Effect |
-|--------|--------|
-| Left-click a card | Dismiss it |
-| Drag anywhere | Reposition the overlay |
-| Hover | Pauses all expiry timers |
-| Right-click a card | Context menu (dismiss, copy, clear all, mute app) |
-| Drag left/right edge | Resize width (when manual resize is enabled) |
-
-### Settings
-Changes are debounced and auto-saved. Use **Send Test Notification** (Ctrl+T) to preview general styling without waiting for a real notification, and use **Settings > Filtering > Send Highlight Preview** when you want a local highlighted card for filter-specific styling checks. The header also exposes undo/redo, and **Reset to Defaults** asks for confirmation before replacing your current settings.
-
-### Windows notification setup
-Notifications Pro mirrors the notifications Windows is already surfacing. If Windows notifications are off for an app, there is nothing for the overlay to capture.
-
-- Microsoft setup guide: [Change notification settings in Windows](https://support.microsoft.com/windows/change-notification-settings-in-windows-8942c744-6198-fe56-4639-34320cf9444e)
-- In Notifications Pro, use `Settings > System > Notification Access` for `Open Windows Notification Access`, `Retry Access Check`, `Run Capture Diagnostic`, and `Capture Mode`.
-
-### Browser-hosted apps and PWAs
-If several services all show up as `Google Chrome`, `Microsoft Edge`, or another browser host, install the site as an app/PWA when the browser supports it. That gives Windows a better chance to surface a distinct app name instead of the shared browser host name.
-
-- Chrome desktop app/PWA install: [Install or manage apps in Chrome](https://support.google.com/chrome/answer/9658361?co=GENIE.Platform%3DDesktop&hl=en)
-- Microsoft Edge app/PWA install: [Install as app from Microsoft Edge](https://learn.microsoft.com/en-us/microsoft-edge/progressive-web-apps-chromium/how-to/install)
-- Notifications Pro only sees the Windows app name, title, and body it receives. It does not get direct platform account IDs or browser-internal metadata.
-
-### Spoken Notifications
-In **Settings > Accessibility > Spoken Notifications**, turn on **Read Notifications Aloud** to make Notifications Pro narrate captured notifications itself.
-
-Choose from `Body Only`, `Title Only`, `Title + Body`, `Body + Timestamp`, `Title + Timestamp`, or `Title + Body + Timestamp`. You can also choose whether narration should speak `All Allowed Notifications` or `Only Matching Narration Rules`, pick an available Windows voice, adjust rate and volume, and use **Preview Voice** or **Refresh Voices** immediately.
-
-Per-app narration now lives in `Settings > Apps`, where each seen app has a `Read aloud` checkbox alongside its other app-specific overrides. Unchecked apps still stay visible on screen but are ignored by narration. If you need finer control, `Settings > Filtering > Narration Rules` can force `Read Aloud` or `Skip Read Aloud` for matching title/body text, optionally limited to a specific app. If you want speech only for rule hits, turn on `Only speak matching rules` in `Settings > Filtering` or switch `Narration Trigger` to `Only Matching Narration Rules` in Accessibility. Visible cards are spoken once, so new arrivals do not replay cards that already finished speaking.
-
-Notifications Pro now lists every voice Windows exposes to it through the local app speech API and the desktop speech API. Some Narrator Natural voices may still be missing even after installation because Windows does not expose every Narrator voice to third-party app text-to-speech. Use **Refresh Voices** after installing new voices, or reopen the app if Windows still has not published the new voice list.
-
-If you want to install more voices, Microsoft’s setup guides are:
-- [Customize Narrator voices](https://support.microsoft.com/windows/chapter-7-customizing-narrator-6e30e2d0-b2f3-b907-d264-a5d30502ad73)
-- [Supported Narrator languages and voices](https://support.microsoft.com/windows/appendix-a-supported-languages-and-voices-for-narrator-448ec015-eb18-4ac2-8d0d-fac74d441e3b)
-
-This is the app's own text-to-speech feature. Audio plays through your default Windows output and can be heard by people nearby. Notifications Pro does not write spoken text to disk and does not keep overflow notification content for later playback.
-
-### Microsoft Voice Access
-In **Settings > Accessibility > Microsoft Voice Access**, choose `Off`, `Body Only`, or `Title + Body + Timestamp` to control the card-level Windows UI Automation label that Microsoft Voice Access can reference for visible notifications.
-
-This is an accessibility integration, not a separate text-to-speech engine inside Notifications Pro. The selected text is only exposed while the card is on screen, stays in RAM only, and is never written to disk, logged, or sent over the network.
-
----
-
-## Notification Access
-
-On first run, Windows will prompt for notification access. If you denied it or it was not granted:
-1. Open **Windows Settings → Privacy → Notifications** (or search for `notification access`).
-2. Find the notification listener / notification access section.
-3. Enable access for **Notifications Pro**.
-
-Official Windows help:
-- [Change notification settings in Windows](https://support.microsoft.com/windows/change-notification-settings-in-windows-8942c744-6198-fe56-4639-34320cf9444e)
-
-The tray menu also has **Open Privacy > Notifications...** and **Retry Access Check** for troubleshooting.
-
-The same recovery controls now appear in **Settings > System > Notification Access**, alongside the current capture-mode status and a manual `Auto` / `Prefer WinRT` / `Force Accessibility` selector.
-
-If live notifications stop appearing while preview/test notifications still work, switch `Capture Mode` to `Force Accessibility` first. That is the intended recovery path for WinRT delivery stalls or false-positive access states.
-
----
-
-## Troubleshooting
-
-| Symptom | Fix |
-|---------|-----|
-| MSIX won't install or Windows says the package is untrusted | Download the matching **`.msix`** and **`.cer`** from the same GitHub release. Install the **`.cer`** into **Trusted Root Certification Authorities**, and if Windows still says the signature is not trusted, add the same certificate to **Trusted People** and retry. |
-| No notifications captured | First confirm Windows is actually surfacing notifications for that app and that the tray menu is not showing `Resume Notifications` (meaning capture is paused). Then use tray **Retry Access Check**. If test notifications work but live ones do not, open **Settings > System > Notification Access**, use **Open Windows Notification Access** if needed, run **Run Capture Diagnostic**, and switch **Capture Mode** to `Force Accessibility`. |
-| Can't drag the overlay | Click-through is on. Turn off the tray **Click-Through** item or disable **Settings > Layout > Click-Through Mode**. |
-| Windows toasts stop appearing | If you want both native Windows toasts and the overlay, turn off **Settings > System > Suppress Toast Popups**. When enabled, Notifications Pro intentionally removes captured native toasts while it is running. |
-| Several Windows sound choices sound identical or very similar | Notifications Pro lists the distinct WAV files Windows currently exposes for its default sound events, but Windows can still map multiple event names to the same or very similar audio. Use **Settings > Sounds > Test** to preview the current choice, or **Browse Custom Sound...** if you want a clearly distinct alert. |
-| The app is running in the tray but I can't see the overlay | Use the tray **Show Overlay** item first. If the overlay appears off-screen, open **Settings > Layout** and use **Quick Position** presets to move it back. |
-| Notifications are not read aloud | Turn on **Settings > Accessibility > Read Notifications Aloud**, then use **Preview Voice**. If Preview Voice is silent, check your Windows output device and selected voice. If Preview Voice works but live notifications stay silent, ensure notifications are not paused, confirm the app is still checked in **Settings > Apps > Read aloud**, and verify that **Settings > Filtering > Only speak matching rules** or `Narration Trigger = Only Matching Narration Rules` is not enabled unless you already have a matching `Read Aloud` rule. |
-| A highlight, mute, or narration rule is affecting the wrong app | Open **Settings > Filtering** and add or tighten the optional **App Filter** so the rule only matches the intended source such as `X`, `Outlook`, `Slack`, `Codex`, or `Antigravity`. |
-| Everything shows up as `Google Chrome` or `Microsoft Edge` | Install the site as a browser app/PWA so Windows can surface a more specific app identity when the browser supports it. If it still comes through as the browser host, keep the browser app name as the **App Filter** and narrow the match with title/body rule text. |
-| Voice Access only sees "Notification" | Change **Settings > Accessibility > Voice Access Card Labels** from `Off` to `Body Only` or `Title + Body + Timestamp`. `Off` intentionally keeps the generic card label. |
-
----
-
-## Project Docs
-
-- [`docs/STATUS.md`](docs/STATUS.md) — current capabilities and manual test checklist
-- [`docs/PLAN.md`](docs/PLAN.md) — milestones and roadmap
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — component overview
-
----
-
-## Disclaimer of Liability
-
-**Notifications Pro is strictly provided "AS IS", without warranty of any kind.**  
-While extensively tested, this software hooks into Windows UI Automation and notification systems. The authors and contributors cannot be held liable for any claim, damages, data loss, or other liability, whether in an action of contract, tort or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software. Please refer to the `LICENSE` file for the full legal text.
-
----
-
-<details>
-<summary><strong>Release Notes</strong></summary>
-
-### Release v1.1.10.37
-- Fixed overlay mouse-wheel scrolling so overflowing notification stacks can now be scrolled while the pointer is over the cards themselves instead of only via scrollbar dragging.
-- Added focused wheel-scrolling regression coverage and reran the project-level build/test verification pass.
-
-### Release v1.1.10.36
-- Fixed the Settings window so ordinary live setting changes no longer shove popup mode back to the centre of the primary monitor.
-- Restored remembered Settings-window placement across popup/window reopen and rebuild flows, and kept popup resizes on the current display instead of re-centering them.
-- Added focused placement regression coverage and reran the project-level build/test verification pass.
-
-### Release v1.1.10.35
-- Hardened user-facing error handling so unexpected crash prompts, narration preview failures, notification-access recovery failures, and background-image copy failures no longer show raw exception text.
-- Clarified the public privacy and security docs that `RAM-only by default` reduces notification-content persistence, but does not claim hardened protection against sufficiently privileged local process inspection.
-- Added regression coverage for the safe exception-dialog formatting helper and reran the project-level build/test verification pass.
-
-### Release v1.1.10.34
-- Hardened local background image handling so custom card/fullscreen artwork now uses stricter managed-path validation and a bounded transformed-image cache during long styling sessions.
-- Made Session Archive copy actions more explicit in the tray and settings flows, and tightened the public privacy/security wording around clipboard behavior plus what app-level metadata can still be saved in settings or profiles.
-- Added 1 MB guardrails to normal startup settings and custom-theme JSON loads, with expanded regression coverage for the new hardening paths.
-
-### Release v1.1.10.33
-- Fixed `Settings Window` slider and live-binding refresh issues in popup mode by correcting the Settings Window theme property notifications. Opacity, surface, element, and corner-radius values now update their on-screen readouts reliably while you drag.
-- Tightened the public README for first-time users with a clearer quick-start/install path, safer MSIX trust wording, explicit app-local OpenDyslexic disclosure, and more direct privacy wording around Session Archive behavior.
-- Reset the in-README release notes to a fresh baseline so this section reflects the current app cleanly instead of carrying a long stale history.
-
-</details>
+- **라이선스:** GPL-3.0-or-later. 전문은 [`LICENSE`](LICENSE)에 있습니다. 이 수정본도 같은 조건을 따릅니다.
+- **원저작권:** Copyright (c) 2024-2026 Liam Wytcherley ([lwytch/Notifications-Pro](https://github.com/lwytch/Notifications-Pro)). 수정: rudals252, 2026년 10월.
+- **제3자 구성 요소:** [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) (OpenDyslexic 글꼴, SIL OFL 1.1).
+- **면책:** 이 소프트웨어는 어떠한 보증도 없이 "있는 그대로" 제공됩니다. Windows UI 자동화와 알림 시스템에 연결되는 프로그램이며, 사용으로 생기는 손해에 대해 저작자와 기여자는 책임지지 않습니다.
