@@ -17,9 +17,8 @@
 
 ---
 
-[Notifications Pro](https://github.com/lwytch/Notifications-Pro)(Liam Wytcherley, GPL-3.0-or-later) `v1.1.10.37`을 바탕으로 rudals252가 수정한 포크입니다. 원본의 오버레이·필터·테마·낭독 기능은 그대로 유지했습니다. 여기에 **앱별 WAV 알림음, 한국어 UI, 로그온 자동 실행, 오버레이 조작 기능**을 더했습니다.
+[Notifications Pro](https://github.com/lwytch/Notifications-Pro)(Liam Wytcherley, GPL-3.0-or-later) `v1.1.10.37`을 바탕으로 수정한 포크입니다. 원본의 오버레이·필터·테마·낭독 기능은 그대로 유지했습니다. 여기에 **앱별 알림음, 한국어 UI, 로그온 자동 실행, 오버레이 조작 기능**을 더했습니다.
 
-캐릭터 TTS로 만든 음성 파일을 ChatGPT·Claude·Discord 같은 앱의 알림음으로 쓰려고 만들었습니다. CMD나 JSON 편집 없이 설정창에서 모두 관리합니다.
 
 > 원본 Notifications Pro의 영문 README는 [README.upstream.md](README.upstream.md)에 그대로 보존했습니다. 이 수정본은 원저작자가 만들거나 보증한 것이 아닙니다.
 
